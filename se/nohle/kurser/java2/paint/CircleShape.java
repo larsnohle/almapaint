@@ -6,11 +6,33 @@ import java.awt.*;
  */
 class CircleShape extends AbstractDrawableShape
 {
-  private Color color; 
+  private final Color color; 
   private int topLeftX; 
   private int topLeftY; 
-  private int radius; 
-  private boolean fill;
+  private CoordinatePair centerPoint;
+  private final int radius; 
+  private final boolean fill;
+
+  /**
+   * Constructor
+   *
+   * @param color The color to use.
+   * @param startPoint The one point of box framing the circle.
+   * @param endPoint The other point of box framing the circle.
+   */
+  CircleShape(Color color, CoordinatePair centerPoint, int radius,
+              boolean fill, int strokeWidth)
+  {
+    super(strokeWidth, color);
+        
+    this.color = color;
+    this.fill = fill;
+    this.centerPoint = centerPoint;
+    this.radius = radius;
+
+    topLeftX = centerPoint.x - radius;
+    topLeftY = centerPoint.y - radius;
+  }
 
   /**
    * Constructor
@@ -22,14 +44,22 @@ class CircleShape extends AbstractDrawableShape
   CircleShape(Color color, CoordinatePair centerPoint, CoordinatePair endPoint,
               boolean fill, int strokeWidth)
   {
-    super(strokeWidth, color);
-        
-    this.color = color;
-    this.fill = fill;
-    radius = (int)Math.sqrt(Math.pow(centerPoint.x - endPoint.x, 2) + Math.pow(centerPoint.y - endPoint.y, 2) );
+    this(color, centerPoint, 
+         (int)Math.sqrt(Math.pow(centerPoint.x - endPoint.x, 2) + 
+                        Math.pow(centerPoint.y - endPoint.y, 2)),
+         fill, strokeWidth);
+  }
 
-    topLeftX = centerPoint.x - radius / 2;
-    topLeftY = centerPoint.y - radius / 2;
+  /**
+   * Copy constructor
+   *
+   * @param color The color to use.
+   * @param startPoint The one point of box framing the circle.
+   * @param endPoint The other point of box framing the circle.
+   */
+  CircleShape(CircleShape that)
+  {
+    this(that.color, that.centerPoint, that.radius, that.fill, that.strokeWidth);
   }
 
 
@@ -39,14 +69,93 @@ class CircleShape extends AbstractDrawableShape
     super.draw(g);
 
     Graphics2D g2 = (Graphics2D)g;
-    
+
+    //----------------------------------------------------------
+    // Should we translate the coordinate system (a.k.a. is this circle
+    // dragged right now?)
+    //---------------------------------------------------------- 
+    int topLeftXToUse = topLeftX;
+    int topLeftYToUse = topLeftY;
+
+    if (translationVector != null)
+    {
+      topLeftXToUse += translationVector.x;
+      topLeftYToUse += translationVector.y;
+    }
+
+    // The width and height are double the length of the radius.
+    int side = 2 * radius;
+
     if (fill)
     {
-      g2.fillOval(topLeftX, topLeftY, radius, radius);
+      g2.fillOval(topLeftXToUse, topLeftYToUse, side, side);
     }
     else
     {
-      g2.drawOval(topLeftX, topLeftY, radius, radius);
+      g2.drawOval(topLeftXToUse, topLeftYToUse, side, side);
     }
+  }
+
+  /**
+   * Returns True if the specified point is included in this shape.
+   *
+   * @param point The point to check if it is included or not.
+   * @return true if point is included in this shape, false if not.
+   */
+  @Override
+  public boolean isPointIncluded(CoordinatePair point)
+  {
+    if (fill)
+    {
+      return isPointInCircle(point, centerPoint, radius);
+    }
+
+    return isPointInCircle(point, centerPoint, radius + strokeWidth) && 
+     !isPointInCircle(point, centerPoint, radius - strokeWidth);      
+  }
+
+  /**
+   * Translates the coordinates used to draw this shape by the amount specified
+   * by the translation vector, which then is nulled out.
+   */
+  @Override
+  public void incorporateTranslationVector()
+  {
+    if (translationVector != null)
+    {
+      topLeftX += translationVector.x;
+      topLeftY += translationVector.y;
+
+      centerPoint = centerPoint.add(translationVector);
+    }
+
+    super.incorporateTranslationVector();
+  }
+
+
+  /**
+   * Creates a clone of this shape.
+   *
+   * @return A clone of this shape.
+   */
+  @Override
+  public DrawableShape createClone()
+  {
+    return new CircleShape(this);
+  }
+
+  //PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+  // 
+  // PRIVATE METHODS.
+  // 
+  //PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+  
+  private static boolean isPointInCircle(CoordinatePair point, 
+                                         CoordinatePair centerPoint, int radius)
+  {
+    // Translate the points so that the center point is in origo.
+    int x = point.x - centerPoint.x;
+    int y = point.y - centerPoint.y;
+    return Math.sqrt(x * x + y * y) <= radius;
   }
 }

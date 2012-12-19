@@ -12,12 +12,9 @@ import java.util.Collections;
  */
 class ShapePanel extends JPanel
 {
-  /** List containing the shapes to be drawn. */
-  private List<DrawableShape> shapes = new ArrayList<>();
-
-  /** List containing that have been removed by the undo operation. */
-  private List<DrawableShape> redoList = new ArrayList<>();
-
+  /** Manages the shapes that the user has drawn or loaded. */
+  private ShapeManager shapeManager = new ShapeManager();
+ 
   /** Shape on which the user is currently working. Not persistent. */
   private DrawableShape shapeUnderConstruction;
 
@@ -25,12 +22,9 @@ class ShapePanel extends JPanel
   private Color currentColor;
   private int strokeWidth = 1;
   private CoordinatePair dragStartPoint;
-  private boolean dragStarted;
-  
+  private boolean dragStarted;  
   private FreehandShape freehandShapeUnderConstruction;
-  private DrawableShape shapeToMove;
-  private DrawableShape shapeThatIsMoved;
-  private int previousIndexOfMovedShape = -1; 
+  private boolean moveOperationOngoing;
   private Callback callback;
 
   /**
@@ -81,7 +75,7 @@ class ShapePanel extends JPanel
    */
   void removeAllShapes()
   {
-    shapes.clear();
+    shapeManager.removeAllShapes();
     repaint();
     
     // Tell the main frame that the number of shapes has changed.
@@ -93,15 +87,9 @@ class ShapePanel extends JPanel
    *
    * @throws IllegalStateException If there is no shape contained in this panel.
    */
-  void removeLastShape()
+  void undoLastOperation()
   {
-    if (shapes.size() == 0)
-    {
-      throw new IllegalStateException();
-    }
-    
-    redoList.add(shapes.get(shapes.size() - 1));
-    shapes.remove(shapes.size() - 1);    
+    shapeManager.undoLastOperation();
     repaint();
 
     // Tell the main frame that the number of shapes has changed.
@@ -109,19 +97,13 @@ class ShapePanel extends JPanel
   }
 
   /**
-   * Moves the most current shape from the redo list to the list of shaped that are displayed..
+   * Redoes last operation that was undone.
    *
-   * @throws IllegalStateException If there is no shape in the redo list.
+   * @throws IllegalStateException If there is no operation to undo.
    */
-  void addLastRemovedShape()
+  void redoLastOperation()
   {
-    if (redoList.size() == 0)
-    {
-      throw new IllegalStateException();
-    }
-    
-    shapes.add(redoList.get(redoList.size() - 1));
-    redoList.remove(redoList.size() - 1);    
+    shapeManager.redoLastOperation();
     repaint();
 
     // Tell the main frame that the number of shapes has changed.
@@ -135,7 +117,7 @@ class ShapePanel extends JPanel
    */
   boolean hasAtLeastOneShape()
   {
-    return !shapes.isEmpty();
+    return shapeManager.hasAtLeastOneShape();
   }
 
   /**
@@ -145,7 +127,7 @@ class ShapePanel extends JPanel
    */
   boolean hasAtLeastOneShapeInRedoList()
   {
-    return !redoList.isEmpty();
+    return shapeManager.hasAtLeastOneShapeInRedoStack();
   }
 
   /**
@@ -155,7 +137,7 @@ class ShapePanel extends JPanel
    */ 
   List<DrawableShape> getShapes()
   {
-    return Collections.unmodifiableList(shapes);
+    return shapeManager.getShapes();
   }
 
   /**
@@ -166,9 +148,7 @@ class ShapePanel extends JPanel
    */
   void setShapes(List<DrawableShape> shapes)
   {
-    this.shapes.clear();
-    this.shapes.addAll(shapes);
-    redoList.clear();
+    shapeManager.setShapes(shapes);
     repaint();
 
     callback.numberOfShapesHasChanged();
@@ -182,7 +162,7 @@ class ShapePanel extends JPanel
   int hashCodeOfShapes()
   {
     int sum = 0;
-    for (DrawableShape shape : shapes)
+    for (DrawableShape shape : shapeManager.getShapes())
     {
       sum += shape.hashCode();
     }
@@ -190,9 +170,9 @@ class ShapePanel extends JPanel
     return sum;
   }
 
-//----------------------------------------------------------
-// PRIVATE METHODS.
-//---------------------------------------------------------- 
+  //----------------------------------------------------------
+  // PRIVATE METHODS.
+  //---------------------------------------------------------- 
   
   /**
    * Adds a shape to this panel.
@@ -201,8 +181,7 @@ class ShapePanel extends JPanel
    */
   private void addShape(DrawableShape shape)    
   {
-    shapes.add(shape);
-    redoList.clear();
+    shapeManager.addShape(shape);
     repaint();
     
     // Tell the main frame that the number of shapes has changed.
@@ -366,6 +345,7 @@ class ShapePanel extends JPanel
     setShapeUnderConstruction(null);
     addShape(new CircleShape(currentColor, dragStartPoint, dragEndPoint, 
                              callback.fillSelected(), strokeWidth));
+    System.out.println("dragEndPoint: " + dragEndPoint); 
   }
 
   /**
@@ -389,36 +369,23 @@ class ShapePanel extends JPanel
    */
   private void moveTopShapeIfAny(CoordinatePair point) 
   {
-    if (shapeThatIsMoved == null)
+    if (!moveOperationOngoing)
     {
-      shapeToMove = findTopmostShapeThatIncludesPoint(point);    
+      DrawableShape shapeToMove = findTopmostShapeThatIncludesPoint(point);    
 
       if (shapeToMove != null)
       {
-        // Keep track of previous index in list.
-        previousIndexOfMovedShape = shapes.indexOf(shapeToMove);
-
-        // Remove from list.
-        shapes.remove(shapeToMove);
-
-        // Add to undo queue.
-        // TODO: implement
-
-        // Clone
-        shapeThatIsMoved = shapeToMove.createClone();
-
-        // Add to shapes list.
-         shapes.add(shapeThatIsMoved);
+        shapeManager.moveOperationStarted(shapeToMove,shapeToMove.createClone());
+        moveOperationOngoing = true;
       }
     }
     
 
-    if (shapeThatIsMoved != null)
+    if (moveOperationOngoing)
     {
       // Calculate translation vector.
       CoordinatePair translationVector = point.difference(dragStartPoint);
-
-      shapeThatIsMoved.setTranslationVector(translationVector);
+      shapeManager.moveOperationShapeHasMoved(translationVector);
       repaint();
     }
 
@@ -433,11 +400,11 @@ class ShapePanel extends JPanel
    */
   private DrawableShape findTopmostShapeThatIncludesPoint(CoordinatePair point)
   {
-    for (int i = shapes.size() -1 ; i >= 0; i--)
+    for (DrawableShape shape : shapeManager.getShapesInReverseOrder())
     {
-      if (shapes.get(i).isPointIncluded(point))
+      if (shape.isPointIncluded(point))
       {
-        return shapes.get(i);
+        return shape;
       }
     }
 
@@ -457,7 +424,7 @@ class ShapePanel extends JPanel
   {
     super.paintComponent(g);
 
-    for (DrawableShape shape : shapes)
+    for (DrawableShape shape : shapeManager.getShapes())
     {
       shape.draw(g);
     }
@@ -513,9 +480,9 @@ class ShapePanel extends JPanel
         {
           createCircle(e.getX(), e.getY());
         }
-        else if (shapeThatIsMoved != null) // A move has ended.
+        else if (moveOperationOngoing) // A move has ended.
         {
-          shapeThatIsMoved.incorporateTranslationVector();
+          shapeManager.moveOperationCompleted();
         }
       }
       else
@@ -527,9 +494,7 @@ class ShapePanel extends JPanel
       dragStarted = false;
       dragStartPoint = null;
       freehandShapeUnderConstruction = null;
-      shapeToMove = null;
-      shapeThatIsMoved = null;
-      previousIndexOfMovedShape = -1;
+      moveOperationOngoing = false;
     }
 
 

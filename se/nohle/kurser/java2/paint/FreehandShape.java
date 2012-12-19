@@ -22,13 +22,29 @@ class FreehandShape extends AbstractDrawableShape
   }
 
   /**
+   * Copy constructor
+   *
+   * @param that The object to copy.
+   */
+  FreehandShape(FreehandShape that)
+  {
+    super(that.strokeWidth, that.color);
+    
+    for (CoordinatePair point : that.coordinatePoints)
+    {
+      coordinatePoints.add(new CoordinatePair(point));
+    }
+  }
+
+  /**
    * Adds a point to this freehand drawing.
    *
    * @param point The point to add.
    */
   void addPoint(CoordinatePair point)
   {
-    coordinatePoints.add(point);  }
+    coordinatePoints.add(point);  
+  }
 
   @Override
   public void draw(Graphics g)
@@ -37,12 +53,90 @@ class FreehandShape extends AbstractDrawableShape
 
     Graphics2D g2 = (Graphics2D)g;
 
-    for (int i = 1; i < coordinatePoints.size() - 1; i++)
-    {
-      CoordinatePair startPoint = coordinatePoints.get(i);
-      CoordinatePair endPoint = coordinatePoints.get(i + 1);
 
-      g2.drawLine(startPoint.x, startPoint.y, endPoint.x, endPoint.y);
+    if (translationVector != null)
+    {
+      for (int i = 1; i < coordinatePoints.size() - 1; i++)
+      {
+        CoordinatePair startPoint = coordinatePoints.get(i).add(translationVector);
+        CoordinatePair endPoint = coordinatePoints.get(i + 1).add(translationVector);
+        
+        g2.drawLine(startPoint.x, startPoint.y, endPoint.x, endPoint.y);
+      }
+    }
+    else
+    {
+      
+      for (int i = 1; i < coordinatePoints.size() - 1; i++)
+      {
+        CoordinatePair startPoint = coordinatePoints.get(i);
+        CoordinatePair endPoint = coordinatePoints.get(i + 1);
+        
+        g2.drawLine(startPoint.x, startPoint.y, endPoint.x, endPoint.y);
+      }
     }
   }
+
+
+  /**
+   * Returns True if the specified point is included in this shape.
+   *
+   * @param point The point to check if it is included or not.
+   * @return true if point is included in this shape, false if not.
+   */
+  @Override
+  public boolean isPointIncluded(CoordinatePair point)
+  {
+//     int maxX = Math.max(startX, endX);
+
+//     // y = kx +m
+//     double k = (endY - startY) / (double)(endX - startX); 
+//     double m = endY - k * endX;
+
+//     double lineYForPointX = k * point.x + m;
+//     double lineXForPointY = (point.x - m) / k;
+
+//     double yDistance = Math.abs(lineYForPointX - point.y);
+//     double xDistance = Math.abs(lineXForPointY - point.x);
+
+//     int allowedMaxDistance = strokeWidth; 
+
+//     if (yDistance <= allowedMaxDistance || xDistance <= allowedMaxDistance)
+//     {
+//       return true;
+//     }
+
+    return false;
+  }
+
+  /**
+   * Translates the coordinates used to draw this shape by the amount specified
+   * by the translation vector, which then is nulled out.
+   */
+  @Override
+  public void incorporateTranslationVector()
+  {
+//     if (translationVector != null)
+//     {
+//       startX += translationVector.x;
+//       startY += translationVector.y;
+
+//       endX += translationVector.x;
+//       endY += translationVector.y;
+//     }
+
+    super.incorporateTranslationVector();
+  }
+
+  /**
+   * Creates a clone of this shape.
+   *
+   * @return A clone of this shape.
+   */
+  @Override
+  public DrawableShape createClone()
+  {
+    return new FreehandShape(this);
+  }
+
 }

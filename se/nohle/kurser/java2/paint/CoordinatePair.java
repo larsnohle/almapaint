@@ -20,6 +20,17 @@ public class CoordinatePair implements java.io.Serializable
     this.y = y;
   }
 
+  /**
+   * Copy Constructor
+   *
+   */
+  public CoordinatePair(CoordinatePair that)
+  {
+    this.x = that.x;
+    this.y = that.y;
+  }
+
+
   @Override
   public String toString()
   {
@@ -64,5 +75,16 @@ public class CoordinatePair implements java.io.Serializable
   public CoordinatePair difference(CoordinatePair that)
   {
     return new CoordinatePair(this.x - that.x, this.y - that.y);
+  }
+
+  /**
+   * Adds a CoordinatePair to this object.
+   *
+   * @param pair The CoordinatePair to add.
+   * return The sum of this and that.
+   */
+  public CoordinatePair add(CoordinatePair that)
+  {
+    return new CoordinatePair(this.x + that.x, this.y + that.y);
   }
 }

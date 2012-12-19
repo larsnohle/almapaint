@@ -207,7 +207,7 @@ public class MainFrame extends JFrame
       {
         public void actionPerformed(ActionEvent ae)
         {
-          shapePanel.removeLastShape();
+          shapePanel.undoLastOperation();
           setEnabledStateOfActions();
         }
       };
@@ -216,7 +216,7 @@ public class MainFrame extends JFrame
       {
         public void actionPerformed(ActionEvent ae)
         {
-          shapePanel.addLastRemovedShape();
+          shapePanel.redoLastOperation();
           setEnabledStateOfActions();
         }
       };
