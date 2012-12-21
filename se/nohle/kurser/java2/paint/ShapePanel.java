@@ -345,7 +345,6 @@ class ShapePanel extends JPanel
     setShapeUnderConstruction(null);
     addShape(new CircleShape(currentColor, dragStartPoint, dragEndPoint, 
                              callback.fillSelected(), strokeWidth));
-    System.out.println("dragEndPoint: " + dragEndPoint); 
   }
 
   /**

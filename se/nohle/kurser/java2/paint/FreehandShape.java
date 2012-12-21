@@ -56,7 +56,7 @@ class FreehandShape extends AbstractDrawableShape
 
     if (translationVector != null)
     {
-      for (int i = 1; i < coordinatePoints.size() - 1; i++)
+      for (int i = 0; i < coordinatePoints.size() - 1; i++)
       {
         CoordinatePair startPoint = coordinatePoints.get(i).add(translationVector);
         CoordinatePair endPoint = coordinatePoints.get(i + 1).add(translationVector);
@@ -65,9 +65,8 @@ class FreehandShape extends AbstractDrawableShape
       }
     }
     else
-    {
-      
-      for (int i = 1; i < coordinatePoints.size() - 1; i++)
+    {      
+      for (int i = 0; i < coordinatePoints.size() - 1; i++)
       {
         CoordinatePair startPoint = coordinatePoints.get(i);
         CoordinatePair endPoint = coordinatePoints.get(i + 1);
@@ -87,26 +86,31 @@ class FreehandShape extends AbstractDrawableShape
   @Override
   public boolean isPointIncluded(CoordinatePair point)
   {
-//     int maxX = Math.max(startX, endX);
-
-//     // y = kx +m
-//     double k = (endY - startY) / (double)(endX - startX); 
-//     double m = endY - k * endX;
-
-//     double lineYForPointX = k * point.x + m;
-//     double lineXForPointY = (point.x - m) / k;
-
-//     double yDistance = Math.abs(lineYForPointX - point.y);
-//     double xDistance = Math.abs(lineXForPointY - point.x);
-
-//     int allowedMaxDistance = strokeWidth; 
-
-//     if (yDistance <= allowedMaxDistance || xDistance <= allowedMaxDistance)
-//     {
-//       return true;
-//     }
+    for (int i = 0; i < coordinatePoints.size() - 1; i++)
+    {
+      CoordinatePair startPoint = coordinatePoints.get(i);
+      CoordinatePair endPoint = coordinatePoints.get(i + 1);
+      if (isPointOnLine(startPoint, endPoint, point)) 
+      {
+        return true;
+      }
+    }
 
     return false;
+  }
+
+  /**
+   * Returns True if the specified point is sufficiently near the specified line.
+   *
+   * @param startPoint The start point of the line.
+   * @param endPoint The end point of the line.
+   * @param pointToCheck The point to check if it is on the line or not.
+   * @return true if point is on the line false if 
+   */
+   private boolean isPointOnLine(CoordinatePair startPoint, CoordinatePair endPoint, 
+   CoordinatePair pointToCheck)
+   {
+    return Utilities.distanceBetweenLineAndPoint(startPoint, endPoint, pointToCheck) <= strokeWidth;
   }
 
   /**
@@ -116,14 +120,16 @@ class FreehandShape extends AbstractDrawableShape
   @Override
   public void incorporateTranslationVector()
   {
-//     if (translationVector != null)
-//     {
-//       startX += translationVector.x;
-//       startY += translationVector.y;
-
-//       endX += translationVector.x;
-//       endY += translationVector.y;
-//     }
+    if (translationVector != null)
+    {
+      List<CoordinatePair> translatedCoordinatePoints = new ArrayList<>();
+      for (CoordinatePair point : coordinatePoints)
+      {
+        translatedCoordinatePoints.add(point.add(translationVector));
+      }
+      
+      coordinatePoints = translatedCoordinatePoints;
+    }
 
     super.incorporateTranslationVector();
   }

@@ -48,8 +48,7 @@ class Rectangle extends AbstractDrawableShape
       this.translationVector = new CoordinatePair(that.translationVector.x, 
                                                   that.translationVector.y);
      }
-  }
-  
+  }  
 
   @Override
   public void draw(Graphics g)
@@ -94,15 +93,18 @@ class Rectangle extends AbstractDrawableShape
   {
     if (fill)
     {
-      if (point.x < topLeftX || point.x > topLeftX + width || 
-          point.y < topLeftY || point.y > topLeftY + height) {
-        return false;
-      }
-
-      return true;
+      return pointInRectangle(point, topLeftX, topLeftY, width, height);
     }
+
+    int startXLeft = topLeftX - (strokeWidth + 1) / 2;
+    int startYTop = topLeftY - (strokeWidth + 1) / 2;
+    int startXRight = topLeftX + width  - (strokeWidth + 1) / 2;
+    int startYBottom = topLeftY + height - (strokeWidth + 1) / 2;
     
-    return false;
+    return pointInRectangle(point, startXLeft, startYTop, width, strokeWidth)||
+     pointInRectangle(point, startXLeft, startYTop, strokeWidth, height)||
+     pointInRectangle(point, startXRight, startYTop, strokeWidth, height)||
+     pointInRectangle(point, startXLeft, startYBottom, width, strokeWidth);
   }
   
   /**
@@ -133,11 +135,31 @@ class Rectangle extends AbstractDrawableShape
     return new Rectangle(this);
   }
 
-
-
   @Override
   public String toString()
   {
     return "x: " + topLeftX + " y: " + topLeftY + " width: " + width + " height: " + height;
   }
+
+  //PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+  // 
+  // PRIVATE METHODS.
+  // 
+  //PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+
+  /**
+   * Determines if the specified point is inside the specified rectangle.
+   */
+  private static boolean pointInRectangle(CoordinatePair point, 
+                                          int topLeftX, int topLeftY, 
+                                          int width, int height)
+  {
+    if (point.x < topLeftX || point.x > topLeftX + width || 
+          point.y < topLeftY || point.y > topLeftY + height) {
+        return false;
+      }
+    
+    return true;
+  }
+
 }

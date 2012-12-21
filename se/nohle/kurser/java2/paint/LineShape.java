@@ -87,26 +87,7 @@ class LineShape extends AbstractDrawableShape
   @Override
   public boolean isPointIncluded(CoordinatePair point)
   {
-    int maxX = Math.max(startX, endX);
-
-    // y = kx +m
-    double k = (endY - startY) / (double)(endX - startX); 
-    double m = endY - k * endX;
-
-    double lineYForPointX = k * point.x + m;
-    double lineXForPointY = (point.x - m) / k;
-
-    double yDistance = Math.abs(lineYForPointX - point.y);
-    double xDistance = Math.abs(lineXForPointY - point.x);
-
-    int allowedMaxDistance = strokeWidth; 
-
-    if (yDistance <= allowedMaxDistance || xDistance <= allowedMaxDistance)
-    {
-      return true;
-    }
-
-    return false;
+    return Utilities.distanceBetweenLineAndPoint(startX, startY, endX, endY, point) <= strokeWidth;
   }
 
   /**
