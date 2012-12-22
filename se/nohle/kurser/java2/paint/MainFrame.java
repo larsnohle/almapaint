@@ -15,10 +15,8 @@ public class MainFrame extends JFrame
   //----------------------------------------------------------
   // Constants
   //---------------------------------------------------------- 
-  private static final int WINDOW_WIDTH = 500;
+  private static final int WINDOW_WIDTH = 700;
   private static final int WINDOW_HEIGHT = 500;
-  private static final String RECTANGLE = "Rektangel";
-  private static final String FREE_HAND = "Frihand";
   private Color DEFAULT_COLOR = Color.RED;
   private ToolType DEFAULT_SHAPE_TYPE = ToolType.FREEHAND;
   private static String LANGUAGE_BUNDLE_FILENAME =
@@ -52,6 +50,9 @@ public class MainFrame extends JFrame
   private JLabel colorChoiceMessageLabel;
   private JLabel strokeWidthMessageLabel;
   private JLabel strokeWidthLabel;
+  private JLabel fillLabel;
+
+  private JCheckBox fillVB;
 
   private JMenuBar menuBar;
   private JMenu fileMenu;
@@ -261,6 +262,9 @@ public class MainFrame extends JFrame
       {
         public void actionPerformed(ActionEvent ae)
         {
+          AboutDialog aboutDialog = new AboutDialog(MainFrame.this, languageBundle);
+          aboutDialog.configure();
+          aboutDialog.setVisible(true);
         }
       };
 
@@ -269,6 +273,7 @@ public class MainFrame extends JFrame
         public void actionPerformed(ActionEvent ae)
         {
           fillSelected = optionFillMenuItem.getState();
+          fillVB.setSelected(fillSelected);
         }
       };
   }
@@ -354,6 +359,9 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     colorChoiceMessageLabel= new JLabel(getString("COLOR_CHOICE"));
     strokeWidthMessageLabel = new JLabel(getString("STROKE_WIDTH") + ": ");
     strokeWidthLabel = new JLabel("1");
+
+    fillLabel = new JLabel(getString("FILL") + ":");
+    fillVB = new JCheckBox();
 
     toolCB = new JComboBox<ToolType>();
 
@@ -489,6 +497,7 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     optionsMenu.add(strokeWidthMenu);
     
     helpMenu = new JMenu(getString("HELP"));
+    helpMenu.add(aboutAction);
 
     menuBar.add(fileMenu);
     menuBar.add(editMenu);
@@ -578,13 +587,16 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     //----------------------------------------------------------
     // Coordinate panel. 
     //---------------------------------------------------------- 
-    GridBagConstraints gbc = new GridBagConstraints(); 
+    GridBagConstraints gbc = new GridBagConstraints();
+    Insets betweenComponentsInPair = new Insets(0, 5, 0, 0);
+    Insets betweenPairs = new Insets(0, 1, 0, 10);
+    Insets pushUpInsets = new Insets(0, 1, 3, 0);
 
     gbc.gridx = 1;
     gbc.anchor = GridBagConstraints.SOUTHWEST;
+    gbc.insets = pushUpInsets;
     gbc.weightx = 0;
     gbc.weighty = 0;
-    gbc.gridx = 1;
     gbc.fill = GridBagConstraints.HORIZONTAL;
     coordinatePanel.add(coordinateMessageLabel, gbc);
 
@@ -595,20 +607,33 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     
     //----------------------------------------------------------
     // Stroke width panel.
-    //---------------------------------------------------------- 
+    //----------------------------------------------------------
     gbc = new GridBagConstraints(); 
     gbc.gridx = 1;
     gbc.anchor = GridBagConstraints.WEST;
+    gbc.insets = betweenComponentsInPair;
     gbc.weightx = 0;
     gbc.weighty = 0;
     gbc.fill = GridBagConstraints.HORIZONTAL;
     strokeWidthPanel.add(strokeWidthMessageLabel, gbc);
 
     gbc.gridx = 2;
-    gbc.anchor = GridBagConstraints.WEST;
+    gbc.insets = betweenPairs;
     gbc.weightx = 1;
     gbc.weighty = 1;
     strokeWidthPanel.add(strokeWidthLabel, gbc);
+
+    gbc.gridx = 3;
+    gbc.insets = betweenComponentsInPair;
+    gbc.weightx = 0;
+    gbc.weighty = 0;
+    strokeWidthPanel.add(fillLabel, gbc);
+
+    gbc.gridx = 4;
+    gbc.insets = betweenPairs;
+    gbc.weightx = 1;
+    gbc.weighty = 1;
+    strokeWidthPanel.add(fillVB, gbc);
 
     //----------------------------------------------------------
     // Color choice panel.
@@ -616,6 +641,7 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     gbc = new GridBagConstraints(); 
     gbc.gridx = 1;
     gbc.anchor = GridBagConstraints.SOUTHEAST;
+    gbc.insets = pushUpInsets;
     gbc.weightx = 0;
     gbc.weighty = 0;
     gbc.gridx = 1;
@@ -629,9 +655,9 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 
     //----------------------------------------------------------
     // Status panel.
-    //---------------------------------------------------------- 
+    //----------------------------------------------------------
     Insets insets = new Insets(4, 5, 4, 5);
-    gbc = new GridBagConstraints(); 
+    gbc = new GridBagConstraints();
     gbc.gridx = 1;
     gbc.anchor = GridBagConstraints.SOUTHWEST;
     gbc.insets = insets;
