@@ -1,8 +1,25 @@
-package se.nohle.kurser.java2.paint;
+/*
+ Copyright 2012 Lars Nohle
+
+ This file is part of AlmaPaint.
+
+ AlmaPaint is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ AlmaPaint is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with AlmaPaint.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package se.nohle.almapaint;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.Stack;
 import java.util.Collections;
 
@@ -140,7 +157,7 @@ class ShapeManager
   /**
    * Determines if there is at least one managed shape.
    *
-   * @retun true if least one shape is managed, false if not.
+   * @return true if least one shape is managed, false if not.
    */
   boolean hasAtLeastOneShape()
   {
@@ -150,7 +167,7 @@ class ShapeManager
   /**
    * Determines if there is at least one shape in the redo list.
    *
-   * @retun true if there is at least one shape in the redo list, false if not.
+   * @return true if there is at least one shape in the redo list, false if not.
    */
   boolean hasAtLeastOneShapeInUndoStack()
   {
@@ -160,7 +177,7 @@ class ShapeManager
   /**
    * Determines if there is at least one shape in the redo list.
    *
-   * @retun true if there is at least one shape in the redo list, false if not.
+   * @return true if there is at least one shape in the redo list, false if not.
    */
   boolean hasAtLeastOneShapeInRedoStack()
   {

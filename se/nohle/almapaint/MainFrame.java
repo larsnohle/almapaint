@@ -1,4 +1,22 @@
-package se.nohle.kurser.java2.paint;
+/*
+ Copyright 2012 Lars Nohle
+
+ This file is part of AlmaPaint.
+
+ AlmaPaint is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ AlmaPaint is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with AlmaPaint.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package se.nohle.almapaint;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -20,7 +38,7 @@ public class MainFrame extends JFrame
   private Color DEFAULT_COLOR = Color.RED;
   private ToolType DEFAULT_SHAPE_TYPE = ToolType.FREEHAND;
   private static final String LANGUAGE_BUNDLE_FILENAME =
-  "se/nohle/kurser/java2/paint/languageBundle.properties";  
+    "se/nohle/almapaint/languageBundle.properties";
   private final static Color PURPLE = new Color(128, 0, 128);
 
   //----------------------------------------------------------
@@ -784,7 +802,7 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
    *
    * @param point The coordinates to display.
    */
-  private void displayCoordinates(CoordinatePair point) 
+  private void displayCoordinates(CoordinatePair point)
   {
     int xCoordinate = point.x;
     int yCoordinate = point.y;

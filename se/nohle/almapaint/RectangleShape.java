@@ -1,10 +1,29 @@
-package se.nohle.kurser.java2.paint;
+/*
+ Copyright 2012 Lars Nohle
+
+ This file is part of AlmaPaint.
+
+ AlmaPaint is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ AlmaPaint is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with AlmaPaint.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package se.nohle.almapaint;
+
 import java.awt.*;
 
 /**
  * A rectangular shape,
  */
-class Rectangle extends AbstractDrawableShape
+class RectangleShape extends AbstractDrawableShape
 {
   private int topLeftX; 
   private int topLeftY; 
@@ -19,8 +38,8 @@ class Rectangle extends AbstractDrawableShape
    * @param startPoint The start point of the user operation that resulted in the creation of this rectangle..
    * @param endPoint The end point,
    */
-  Rectangle(Color color, CoordinatePair startPoint, CoordinatePair endPoint,
-            boolean fill, int strokeWidth)
+  RectangleShape(Color color, CoordinatePair startPoint, CoordinatePair endPoint,
+                 boolean fill, int strokeWidth)
   {
     super(strokeWidth, color);
     this.fill = fill;
@@ -34,7 +53,7 @@ class Rectangle extends AbstractDrawableShape
   /**
    * Copy constructor.
    */
-  private Rectangle(Rectangle that)
+  private RectangleShape(RectangleShape that)
   {
     super(that.strokeWidth, that.color);
     this.topLeftX = that.topLeftX;
@@ -132,7 +151,7 @@ class Rectangle extends AbstractDrawableShape
   @Override
   public DrawableShape createClone()
   {
-    return new Rectangle(this);
+    return new RectangleShape(this);
   }
 
   @Override

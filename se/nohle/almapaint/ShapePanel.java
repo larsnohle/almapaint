@@ -1,11 +1,27 @@
-package se.nohle.kurser.java2.paint;
+/*
+ Copyright 2012 Lars Nohle
+
+ This file is part of AlmaPaint.
+
+ AlmaPaint is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ AlmaPaint is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with AlmaPaint.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package se.nohle.almapaint;
 
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 import java.util.List;
-import java.util.ArrayList;
-import java.util.Collections;
 
 /**
  * The panel on which the shapes are drawn.
@@ -30,7 +46,7 @@ class ShapePanel extends JPanel
   /**
    * Constructor
    *
-   * @param callback. The callback (to MainFrame) on which to invoke methods when the user has 
+   * @param callback The callback (to MainFrame) on which to invoke methods when the user has
    *                  performed some action that affects the container in which this panel resides.  
    */
   ShapePanel(Callback callback)
@@ -113,7 +129,7 @@ class ShapePanel extends JPanel
   /**
    * Determines if this panel contains at least one shape.
    *
-   * @retun true if this panel contains at least one shape, false if not.
+   * @return true if this panel contains at least one shape, false if not.
    */
   boolean hasAtLeastOneShape()
   {
@@ -123,7 +139,7 @@ class ShapePanel extends JPanel
   /**
    * Determines if there is at least one shape in the redo list.
    *
-   * @retun true if there is at least one shape in the redo list, false if not.
+   * @return true if there is at least one shape in the redo list, false if not.
    */
   boolean hasAtLeastOneShapeInRedoList()
   {
@@ -293,7 +309,7 @@ class ShapePanel extends JPanel
   {
     CoordinatePair dragEndPoint = new CoordinatePair(x, y);
     setShapeUnderConstruction(null);
-    addShape(new Rectangle(currentColor, dragStartPoint, dragEndPoint,
+    addShape(new RectangleShape(currentColor, dragStartPoint, dragEndPoint,
                            callback.fillSelected(), strokeWidth));
   }
   /**
@@ -303,7 +319,7 @@ class ShapePanel extends JPanel
    */  
   private void createTemporaryRectangle(CoordinatePair point)
   {
-    setShapeUnderConstruction(new Rectangle(currentColor, dragStartPoint, 
+    setShapeUnderConstruction(new RectangleShape(currentColor, dragStartPoint,
                                             point, callback.fillSelected(),
                                             strokeWidth));
   }
@@ -343,7 +359,7 @@ class ShapePanel extends JPanel
   {
     CoordinatePair dragEndPoint = new CoordinatePair(x, y);
     setShapeUnderConstruction(null);
-    addShape(new CircleShape(currentColor, dragStartPoint, dragEndPoint, 
+    addShape(new CircleShape(currentColor, dragStartPoint, dragEndPoint,
                              callback.fillSelected(), strokeWidth));
   }
 
@@ -364,7 +380,7 @@ class ShapePanel extends JPanel
    * this method moves that shape by an amount indicate by the vector beteween
    * the drag start point and the point specified when calling this method.
    *
-   *@point The current mouse pointer position.
+   *@param point The current mouse pointer position.
    */
   private void moveTopShapeIfAny(CoordinatePair point) 
   {
@@ -483,10 +499,6 @@ class ShapePanel extends JPanel
         {
           shapeManager.moveOperationCompleted();
         }
-      }
-      else
-      {
-        CoordinatePair dragEndPoint = new CoordinatePair(e.getX(), e.getY());
       }
       
       // Clear the cache values.

@@ -1,4 +1,23 @@
-package se.nohle.kurser.java2.paint;
+/*
+ Copyright 2012 Lars Nohle
+
+ This file is part of AlmaPaint.
+
+ AlmaPaint is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ AlmaPaint is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with AlmaPaint.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package se.nohle.almapaint;
+
 import java.awt.*;
 
 /**
@@ -17,8 +36,10 @@ class CircleShape extends AbstractDrawableShape
    * Constructor
    *
    * @param color The color to use.
-   * @param startPoint The one point of box framing the circle.
-   * @param endPoint The other point of box framing the circle.
+   * @param centerPoint The center point of box framing the circle.
+   * @param radius The radius of the circle.
+   * @param fill true if the circle should be filled.
+   * @param strokeWidth The width of the pen.
    */
   CircleShape(Color color, CoordinatePair centerPoint, int radius,
               boolean fill, int strokeWidth)
@@ -38,8 +59,10 @@ class CircleShape extends AbstractDrawableShape
    * Constructor
    *
    * @param color The color to use.
-   * @param startPoint The one point of box framing the circle.
-   * @param endPoint The other point of box framing the circle.
+   * @param centerPoint The center point of box framing the circle.
+     @param endPoint The other point of the box framing the circle.
+   * @param fill true if the circle should be filled.
+   * @param strokeWidth The width of the pen.
    */
   CircleShape(Color color, CoordinatePair centerPoint, CoordinatePair endPoint,
               boolean fill, int strokeWidth)
@@ -53,9 +76,7 @@ class CircleShape extends AbstractDrawableShape
   /**
    * Copy constructor
    *
-   * @param color The color to use.
-   * @param startPoint The one point of box framing the circle.
-   * @param endPoint The other point of box framing the circle.
+   * @param that The circle to copy.
    */
   CircleShape(CircleShape that)
   {
