@@ -19,7 +19,7 @@ public class MainFrame extends JFrame
   private static final int WINDOW_HEIGHT = 500;
   private Color DEFAULT_COLOR = Color.RED;
   private ToolType DEFAULT_SHAPE_TYPE = ToolType.FREEHAND;
-  private static String LANGUAGE_BUNDLE_FILENAME =
+  private static final String LANGUAGE_BUNDLE_FILENAME =
   "se/nohle/kurser/java2/paint/languageBundle.properties";  
   private final static Color PURPLE = new Color(128, 0, 128);
 
@@ -36,30 +36,21 @@ public class MainFrame extends JFrame
 
   private JPanel palettePanel;
   private JPanel topPanel;
+
   private JPanel statusPanel;
   private JPanel coordinatePanel;
   private JPanel colorChoiceLabelAndPanelPanel;
   private JPanel colorChoicePanel;
   private JPanel strokeWidthPanel;
+  private JPanel toolPanel;
+  private JPanel fillPanel;
 
   private ShapePanel shapePanel;
 
-  private JComboBox<ToolType> toolCB;
-  private JLabel coordinateMessageLabel;
   private JLabel coordinateLabel;
-  private JLabel colorChoiceMessageLabel;
-  private JLabel strokeWidthMessageLabel;
   private JLabel strokeWidthLabel;
   private JLabel fillLabel;
-
-  private JCheckBox fillVB;
-
-  private JMenuBar menuBar;
-  private JMenu fileMenu;
-  private JMenu editMenu;
-  private JMenu optionsMenu;
-  private JMenu strokeWidthMenu;
-  private JMenu helpMenu;
+  private JLabel toolLabel;
 
   private JCheckBoxMenuItem optionFillMenuItem;
 
@@ -70,6 +61,12 @@ public class MainFrame extends JFrame
   private Action saveAsAction;
   private Action openAction;
   private Action exitAction;
+
+  private Action freehandAction;
+  private Action rectangleAction;
+  private Action lineAction;
+  private Action circleAction;
+  private Action moveAction;
 
   private Action optionFillAction;
 
@@ -111,7 +108,6 @@ public class MainFrame extends JFrame
     createActions();
     createComponents();
     createMenus();
-    initializeComponents();
     setupLayouts();
     addComponentsToTopPanel();
     addComponentsToStatusPanel();
@@ -130,7 +126,6 @@ public class MainFrame extends JFrame
    */
   private static void loadBundle()
   {
-    Reader reader = null;
     InputStream is = null;
     try 
     {
@@ -161,7 +156,7 @@ public class MainFrame extends JFrame
   }
 
   /**
-   * Returna a localized string for the specified key.
+   * Returns a localized string for the specified key.
    *
    * @param key The key to return string for.
    * @return A localized string for key.
@@ -173,7 +168,7 @@ public class MainFrame extends JFrame
 
 
   //----------------------------------------------------------
-  // INSTANCE METODS.
+  // INSTANCE METHODS.
   //---------------------------------------------------------- 
   
   /**
@@ -273,9 +268,49 @@ public class MainFrame extends JFrame
         public void actionPerformed(ActionEvent ae)
         {
           fillSelected = optionFillMenuItem.getState();
-          fillVB.setSelected(fillSelected);
+          fillLabel.setEnabled(fillSelected);
         }
       };
+
+    freehandAction = new AbstractAction(getString("FREE_HAND"))
+    {
+      public void actionPerformed(ActionEvent ae)
+      {
+        setCurrentToolType(ToolType.FREEHAND);
+      }
+    };
+
+    rectangleAction  = new AbstractAction(getString("RECTANGLE"))
+    {
+      public void actionPerformed(ActionEvent ae)
+      {
+        setCurrentToolType(ToolType.RECTANGLE);
+      }
+    };
+
+    lineAction  = new AbstractAction(getString("LINE"))
+    {
+      public void actionPerformed(ActionEvent ae)
+      {
+        setCurrentToolType(ToolType.LINE);
+      }
+    };
+
+    circleAction  = new AbstractAction(getString("CIRCLE"))
+    {
+      public void actionPerformed(ActionEvent ae)
+      {
+        setCurrentToolType(ToolType.CIRCLE);
+      }
+    };
+
+    moveAction  = new AbstractAction(getString("MOVE"))
+    {
+      public void actionPerformed(ActionEvent ae)
+      {
+        setCurrentToolType(ToolType.MOVE);
+      }
+    };
   }
   
   /**
@@ -290,16 +325,6 @@ public class MainFrame extends JFrame
         public void windowClosing(WindowEvent we)
         {
           exitInvoked();
-        }
-      });
-
-    // Listener to tell the ShapePanel when the selected shape type changes.
-    toolCB.addItemListener(new ItemListener()
-      {
-        public void itemStateChanged(ItemEvent e)
-        {
-          Object o = e.getItem();
-          shapePanel.setCurrentToolType((ToolType)o);
         }
       });
 
@@ -351,24 +376,20 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     colorChoiceLabelAndPanelPanel = new JPanel();
     colorChoicePanel = new JPanel();
     strokeWidthPanel = new JPanel();
+    toolPanel = new JPanel();
+    fillPanel = new JPanel();
 
     shapePanel = new ShapePanel(new ShapePanelCallback());
 
-    coordinateMessageLabel = new JLabel(getString("COORDINATES") + " ");
-    coordinateLabel = new JLabel("");
-    colorChoiceMessageLabel= new JLabel(getString("COLOR_CHOICE"));
-    strokeWidthMessageLabel = new JLabel(getString("STROKE_WIDTH") + ": ");
+    coordinateLabel = new JLabel("(,)");
     strokeWidthLabel = new JLabel("1");
 
-    fillLabel = new JLabel(getString("FILL") + ":");
-    fillVB = new JCheckBox();
-
-    toolCB = new JComboBox<ToolType>();
-
+    fillLabel = new JLabel(getString("FILL"));
+    toolLabel = new JLabel(getString("FREE_HAND"));
   }
 
   /**
-   * Creates the menubar, the menus and adds actions to the menus.
+   * Creates the menu bar, the menus and adds actions to the menus.
    * Also sets mnemonics and accelerators.
    */
   private void createMenus()
@@ -381,6 +402,11 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     KeyStroke acceleratorOpen = KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_MASK);
     KeyStroke acceleratorExit = KeyStroke.getKeyStroke(KeyEvent.VK_E, InputEvent.CTRL_MASK);
     KeyStroke acceleratorFill = KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_MASK);
+    KeyStroke acceleratorFreeHand = KeyStroke.getKeyStroke(KeyEvent.VK_H, InputEvent.CTRL_MASK);
+    KeyStroke acceleratorLine = KeyStroke.getKeyStroke(KeyEvent.VK_L, InputEvent.CTRL_MASK);
+    KeyStroke acceleratorCircle = KeyStroke.getKeyStroke(KeyEvent.VK_P, InputEvent.CTRL_MASK);
+    KeyStroke acceleratorRectangle = KeyStroke.getKeyStroke(KeyEvent.VK_T, InputEvent.CTRL_MASK);
+    KeyStroke acceleratorMove = KeyStroke.getKeyStroke(KeyEvent.VK_M, InputEvent.CTRL_MASK);
     KeyStroke acceleratorStrokeWidth1 = KeyStroke.getKeyStroke(KeyEvent.VK_1, InputEvent.CTRL_MASK);
     KeyStroke acceleratorStrokeWidth2 = KeyStroke.getKeyStroke(KeyEvent.VK_2, InputEvent.CTRL_MASK);
     KeyStroke acceleratorStrokeWidth3 = KeyStroke.getKeyStroke(KeyEvent.VK_3, InputEvent.CTRL_MASK);
@@ -392,8 +418,8 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     KeyStroke acceleratorStrokeWidth9 = KeyStroke.getKeyStroke(KeyEvent.VK_9, InputEvent.CTRL_MASK);
     KeyStroke acceleratorStrokeWidth10 = KeyStroke.getKeyStroke(KeyEvent.VK_0, InputEvent.CTRL_MASK);
 
-    menuBar = new JMenuBar();
-    fileMenu = new JMenu(getString("FILE"));
+    JMenuBar menuBar = new JMenuBar();
+    JMenu fileMenu = new JMenu(getString("FILE"));
     JMenuItem menuItem = fileMenu.add(newAction);
     menuItem.setMnemonic(KeyEvent.VK_N);
     menuItem.setAccelerator(acceleratorNew);
@@ -419,7 +445,7 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 
     fileMenu.setMnemonic(KeyEvent.VK_F);
 
-    editMenu = new JMenu(getString("EDIT"));
+    JMenu editMenu = new JMenu(getString("EDIT"));
     editMenu.setMnemonic(KeyEvent.VK_E);
 
     menuItem = editMenu.add(undoAction);
@@ -429,7 +455,25 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     menuItem.setMnemonic(KeyEvent.VK_R);
     menuItem.setAccelerator(acceleratorRedo);
 
-    strokeWidthMenu = new JMenu(getString("STROKE_WIDTH"));
+    JMenu toolsMenu = new JMenu(getString("TOOLS"));
+    toolsMenu.setMnemonic(KeyEvent.VK_T);
+    menuItem = toolsMenu.add(freehandAction);
+    menuItem.setAccelerator(acceleratorFreeHand);
+    menuItem.setMnemonic(KeyEvent.VK_F);
+    menuItem = toolsMenu.add(rectangleAction);
+    menuItem.setAccelerator(acceleratorRectangle);
+    menuItem.setMnemonic(KeyEvent.VK_R);
+    menuItem = toolsMenu.add(lineAction);
+    menuItem.setAccelerator(acceleratorLine);
+    menuItem.setMnemonic(KeyEvent.VK_L);
+    menuItem = toolsMenu.add(circleAction);
+    menuItem.setAccelerator(acceleratorCircle);
+    menuItem.setMnemonic(KeyEvent.VK_C);
+    menuItem = toolsMenu.add(moveAction);
+    menuItem.setAccelerator(acceleratorMove);
+    menuItem.setMnemonic(KeyEvent.VK_M);
+
+    JMenu strokeWidthMenu = new JMenu(getString("STROKE_WIDTH"));
 
     ButtonGroup strokeWidthButtonGroup = new ButtonGroup();
     JRadioButtonMenuItem sw1 = new JRadioButtonMenuItem(
@@ -488,36 +532,23 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 
     sw1.setSelected(true);
 
-    optionsMenu = new JMenu(getString("OPTIONS"));
+    JMenu optionsMenu = new JMenu(getString("OPTIONS"));
     optionFillMenuItem = new JCheckBoxMenuItem(optionFillAction);
     optionFillMenuItem.setAccelerator(acceleratorFill);
     optionsMenu.add(optionFillMenuItem);
 
 
     optionsMenu.add(strokeWidthMenu);
-    
-    helpMenu = new JMenu(getString("HELP"));
+
+    JMenu helpMenu = new JMenu(getString("HELP"));
     helpMenu.add(aboutAction);
 
     menuBar.add(fileMenu);
     menuBar.add(editMenu);
+    menuBar.add(toolsMenu);
     menuBar.add(optionsMenu);
     menuBar.add(helpMenu);
     this.setJMenuBar(menuBar);
-  }
-
-  /**
-   * Sets values of some of the components.
-   */
-  private void initializeComponents()
-  {
-    toolCB.addItem(ToolType.FREEHAND);
-    toolCB.addItem(ToolType.RECTANGLE);
-    toolCB.addItem(ToolType.LINE);
-    toolCB.addItem(ToolType.CIRCLE);
-    toolCB.addItem(ToolType.MOVE);
-
-    toolCB.setSelectedItem(DEFAULT_SHAPE_TYPE);
   }
 
   /**
@@ -531,6 +562,8 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     coordinatePanel.setLayout(new GridBagLayout());
     colorChoiceLabelAndPanelPanel.setLayout(new GridBagLayout());
     strokeWidthPanel.setLayout(new GridBagLayout());
+    toolPanel.setLayout(new GridBagLayout());
+    fillPanel.setLayout(new GridBagLayout());
   }
 
   /**
@@ -572,11 +605,6 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     gbc.weighty = 1;
     gbc.fill = GridBagConstraints.BOTH;    
     topPanel.add(palettePanel, gbc);
-    
-    gbc.gridx = 2;
-    gbc.weightx = 0;
-    gbc.fill = GridBagConstraints.NONE;    
-    topPanel.add(toolCB, gbc);      
   }
 
   /**
@@ -588,67 +616,55 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     // Coordinate panel. 
     //---------------------------------------------------------- 
     GridBagConstraints gbc = new GridBagConstraints();
-    Insets betweenComponentsInPair = new Insets(0, 5, 0, 0);
-    Insets betweenPairs = new Insets(0, 1, 0, 10);
-    Insets pushUpInsets = new Insets(0, 1, 3, 0);
+    Insets pushUpInsets = new Insets(0, 1, 3, 1);
 
-    gbc.gridx = 1;
     gbc.anchor = GridBagConstraints.SOUTHWEST;
     gbc.insets = pushUpInsets;
-    gbc.weightx = 0;
-    gbc.weighty = 0;
-    gbc.fill = GridBagConstraints.HORIZONTAL;
-    coordinatePanel.add(coordinateMessageLabel, gbc);
+    //gbc.fill = GridBagConstraints.HORIZONTAL;
 
-    gbc.gridx = 2;
     gbc.weightx = 1;
     gbc.weighty = 1;
     coordinatePanel.add(coordinateLabel, gbc);
-    
+
+    //----------------------------------------------------------
+    // Tool panel.
+    //----------------------------------------------------------
+    gbc = new GridBagConstraints();
+    gbc.anchor = GridBagConstraints.SOUTHEAST;
+    gbc.insets = pushUpInsets;
+    gbc.weightx = 1;
+    gbc.weighty = 1;
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+    toolPanel.add(toolLabel, gbc);
+
+    //----------------------------------------------------------
+    // Tool panel.
+    //----------------------------------------------------------
+    gbc = new GridBagConstraints();
+    gbc.anchor = GridBagConstraints.SOUTHEAST;
+    gbc.insets = pushUpInsets;
+    gbc.weightx = 1;
+    gbc.weighty = 1;
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+    fillPanel.add(fillLabel, gbc);
+
     //----------------------------------------------------------
     // Stroke width panel.
     //----------------------------------------------------------
-    gbc = new GridBagConstraints(); 
-    gbc.gridx = 1;
-    gbc.anchor = GridBagConstraints.WEST;
-    gbc.insets = betweenComponentsInPair;
-    gbc.weightx = 0;
-    gbc.weighty = 0;
+    gbc = new GridBagConstraints();
+    gbc.anchor = GridBagConstraints.SOUTHEAST;
     gbc.fill = GridBagConstraints.HORIZONTAL;
-    strokeWidthPanel.add(strokeWidthMessageLabel, gbc);
-
-    gbc.gridx = 2;
-    gbc.insets = betweenPairs;
+    gbc.insets = pushUpInsets;
     gbc.weightx = 1;
     gbc.weighty = 1;
     strokeWidthPanel.add(strokeWidthLabel, gbc);
 
-    gbc.gridx = 3;
-    gbc.insets = betweenComponentsInPair;
-    gbc.weightx = 0;
-    gbc.weighty = 0;
-    strokeWidthPanel.add(fillLabel, gbc);
-
-    gbc.gridx = 4;
-    gbc.insets = betweenPairs;
-    gbc.weightx = 1;
-    gbc.weighty = 1;
-    strokeWidthPanel.add(fillVB, gbc);
-
     //----------------------------------------------------------
     // Color choice panel.
     //---------------------------------------------------------- 
-    gbc = new GridBagConstraints(); 
-    gbc.gridx = 1;
+    gbc = new GridBagConstraints();
     gbc.anchor = GridBagConstraints.SOUTHEAST;
     gbc.insets = pushUpInsets;
-    gbc.weightx = 0;
-    gbc.weighty = 0;
-    gbc.gridx = 1;
-    gbc.fill = GridBagConstraints.HORIZONTAL;
-    colorChoiceLabelAndPanelPanel.add(colorChoiceMessageLabel, gbc);
-
-    gbc.gridx = 2;
     gbc.weightx = 1;
     gbc.weighty = 1;
     colorChoiceLabelAndPanelPanel.add(colorChoicePanel, gbc);
@@ -658,22 +674,35 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     //----------------------------------------------------------
     Insets insets = new Insets(4, 5, 4, 5);
     gbc = new GridBagConstraints();
-    gbc.gridx = 1;
     gbc.anchor = GridBagConstraints.SOUTHWEST;
     gbc.insets = insets;
-    gbc.weightx = 1;
     gbc.weighty = 0;
+    statusPanel.add(coordinatePanel, gbc);
+
+    gbc.gridx = 1;
+    gbc.weightx = 1;
     gbc.fill = GridBagConstraints.HORIZONTAL;
-    statusPanel.add(coordinatePanel, gbc);    
+    statusPanel.add(new JPanel(), gbc);
 
     gbc.gridx = 2;
     gbc.anchor = GridBagConstraints.SOUTHEAST;
     gbc.fill = GridBagConstraints.NONE;
     gbc.insets = insets;
     gbc.weightx = 0;
-    statusPanel.add(strokeWidthPanel, gbc);
+    statusPanel.add(toolPanel, gbc);
 
     gbc.gridx = 3;
+    gbc.anchor = GridBagConstraints.SOUTHEAST;
+    gbc.fill = GridBagConstraints.NONE;
+    gbc.insets = insets;
+    gbc.weightx = 0;
+    statusPanel.add(strokeWidthPanel, gbc);
+
+    gbc.gridx = 4;
+    gbc.insets = insets;
+    statusPanel.add(fillPanel, gbc);
+
+    gbc.gridx = 5;
     gbc.anchor = GridBagConstraints.SOUTHEAST;
     gbc.fill = GridBagConstraints.NONE; 
     gbc.insets = insets;
@@ -717,13 +746,19 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 
     shapePanel.setBackground(Color.WHITE);
     shapePanel.setCurrentColor(DEFAULT_COLOR);
-    shapePanel.setCurrentToolType(DEFAULT_SHAPE_TYPE);
+    setCurrentToolType(DEFAULT_SHAPE_TYPE);
 
     colorChoicePanel.setBackground(DEFAULT_COLOR);
 
+    fillLabel.setEnabled(false);
+
+    //----------------------------------------------------------
+    // Widths
+    //----------------------------------------------------------
+
     // The width of the coordinates label may change when different coordinates are displayed.
     // Set the minimum width of the coordinates display explicitly to prevent this.
-    Dimension d = new Dimension(WINDOW_WIDTH / 5, colorChoicePanel.getPreferredSize().height + 10);
+    Dimension d = new Dimension(WINDOW_WIDTH / 8, colorChoicePanel.getPreferredSize().height + 10);
     colorChoicePanel.setPreferredSize(d);
     colorChoicePanel.setMaximumSize(d);
     colorChoicePanel.setMinimumSize(d);
@@ -745,7 +780,7 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
   }
 
   /**
-   * Displays the specified coordinates in the desinated label
+   * Displays the specified coordinates in the designated label
    *
    * @param point The coordinates to display.
    */
@@ -758,7 +793,7 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     {
       currentXCoordinate = xCoordinate;
       currentYCoordinate = yCoordinate;
-      coordinateLabel.setText("" + currentXCoordinate +", " + currentYCoordinate);
+      coordinateLabel.setText("(" + currentXCoordinate +", " + currentYCoordinate + ")");
     } 
   }
 
@@ -770,6 +805,28 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
   private void setStrokeWidthInStatusPanel(int width)
   {
     strokeWidthLabel.setText("" + width);
+  }
+
+  /**
+   * Selects the specified tool type.
+   *
+   * @param toolType The selected tool type.
+   */
+  private void setCurrentToolType(ToolType toolType)
+  {
+    shapePanel.setCurrentToolType(toolType);
+    displaySelectedToolType(toolType);
+  }
+
+  /**
+   * Displays the selected tool type in the status bar.
+   *
+   * @param toolType The selected tool type.
+   */
+  private void displaySelectedToolType(ToolType toolType)
+  {
+    //toolLabel.setText(getString("TOOL") + ": " + getString(toolType.getToolTypeName()));
+    toolLabel.setText(getString(toolType.getToolTypeName()));
   }
 
   /**
@@ -796,7 +853,7 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
    */
   private void saveAsInvoked()
   {    
-    // Set up filechooser.
+    // Set up file chooser.
     JFileChooser fileChooser = new JFileChooser();
     fileChooser.setAcceptAllFileFilterUsed(false);
     fileChooser.setFileFilter(AAR_FILE_FILTER);
@@ -828,7 +885,7 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
    */
   private void openInvoked()
   {    
-    // Set up filechooser.
+    // Set up file chooser.
     JFileChooser fileChooser = new JFileChooser();
     fileChooser.setAcceptAllFileFilterUsed(false);
     fileChooser.setFileFilter(AAR_FILE_FILTER);
@@ -858,7 +915,7 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
   /**
    *
    *
-   * @file The file to use to store in.
+   * @param file The file to use to store in.
    */
   private void storeSaveFile(File file)
   {

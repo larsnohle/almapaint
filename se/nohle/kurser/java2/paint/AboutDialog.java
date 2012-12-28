@@ -38,7 +38,7 @@ public class AboutDialog extends JDialog
   
 
   /*****************************************************************
-   * Constructor
+   * Constructor                                                                                           0
    *****************************************************************/ 
   public AboutDialog(JFrame parent, Properties languageBundle)
   {

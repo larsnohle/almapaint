@@ -6,7 +6,7 @@ package se.nohle.kurser.java2.paint;
 enum ToolType
 {
   
-  RECTANGLE("Rectangle"), FREEHAND("Freehand"), LINE("Line"), CIRCLE("Circle"), MOVE("Move");
+  RECTANGLE("RECTANGLE"), FREEHAND("FREE_HAND"), LINE("LINE"), CIRCLE("CIRCLE"), MOVE("MOVE");
 
   private String shapeTypeName;
 
