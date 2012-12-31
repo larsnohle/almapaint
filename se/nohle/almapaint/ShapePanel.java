@@ -126,14 +126,21 @@ class ShapePanel extends JPanel
     callback.numberOfShapesHasChanged();
   }
 
+  void deleteSelectedShape()
+  {
+    shapeManager.removeSelectedShape();
+    repaint();
+    callback.numberOfShapesHasChanged();
+  }
+
   /**
    * Determines if this panel contains at least one shape.
    *
    * @return true if this panel contains at least one shape, false if not.
    */
-  boolean hasAtLeastOneShape()
+  boolean hasAtLeastOneShapeInUndoStack()
   {
-    return shapeManager.hasAtLeastOneShape();
+    return shapeManager.hasAtLeastOneShapeInUndoStack();
   }
 
   /**
@@ -144,6 +151,16 @@ class ShapePanel extends JPanel
   boolean hasAtLeastOneShapeInRedoList()
   {
     return shapeManager.hasAtLeastOneShapeInRedoStack();
+  }
+
+  /**
+   * Returns true if a shape is selected.
+   *
+   * @return true if a shape is selected.
+   */
+  boolean isAShapeSelected()
+  {
+    return shapeManager.isAShapeSelected();
   }
 
   /**
@@ -296,7 +313,7 @@ class ShapePanel extends JPanel
    */
   private boolean isMoveToolSelected()
   {
-    return currentToolType == ToolType.MOVE;
+    return currentToolType == ToolType.SELECT;
   }
 
   /**
@@ -407,6 +424,24 @@ class ShapePanel extends JPanel
   }
 
   /**
+   * Marks the top-most shape that is sufficiently close to the specified point.
+   *
+   * @param point The point to check.
+   */
+  private void selectShape(CoordinatePair point)
+  {
+    DrawableShape shape = findTopmostShapeThatIncludesPoint(point);
+    if (shape != null)
+    {
+      shapeManager.selectShape(shape);
+      repaint();
+
+      // Tell the main frame that a shape has been selected.
+      callback.shapeSelectionChanged();
+    }
+  }
+
+  /**
    * Returns the topmost shape in which the specified point is included.
    *
    * @param point The point to check.
@@ -498,6 +533,13 @@ class ShapePanel extends JPanel
         else if (moveOperationOngoing) // A move has ended.
         {
           shapeManager.moveOperationCompleted();
+        }
+      }
+      else
+      {
+        if (isMoveToolSelected())
+        {
+          selectShape(new CoordinatePair(e.getX() - 1, e.getY() - 1));
         }
       }
       

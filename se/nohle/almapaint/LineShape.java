@@ -40,7 +40,7 @@ class LineShape extends AbstractDrawableShape
   LineShape(Color color, CoordinatePair startPoint, CoordinatePair endPoint,
             int strokeWidth)
   {
-    this(color, startPoint.x, startPoint.y, endPoint.x, endPoint.y, strokeWidth);
+    this(color, startPoint.x, startPoint.y, endPoint.x, endPoint.y, strokeWidth, false);
   }
 
   /**
@@ -50,7 +50,8 @@ class LineShape extends AbstractDrawableShape
    */
   LineShape(LineShape that)
   {
-    this(that.color, that.startX, that.startY, that.endX, that.endY, that.strokeWidth);
+    this(that.color, that.startX, that.startY, that.endX, that.endY,
+      that.strokeWidth, that.selected);
   }
 
   /**
@@ -64,9 +65,9 @@ class LineShape extends AbstractDrawableShape
    * @param strokeWidth The width of the pen.
    */
    private LineShape(Color color, int startX, int startY, int endX, int endY, 
-            int strokeWidth)
+            int strokeWidth, boolean selected)
   {
-    super(strokeWidth, color);
+    super(strokeWidth, color, selected);
     this.startX = startX;
     this.startY = startY;
 
@@ -98,6 +99,19 @@ class LineShape extends AbstractDrawableShape
 
     Graphics2D g2 = (Graphics2D)g;
     g2.drawLine(startXToUse, startYToUse, endXToUse, endYToUse);
+
+    //----------------------------------------------------------
+    // Is this shape selected? In that case we draw two small rectangles
+    // at the ends of the line.
+    //----------------------------------------------------------
+    if (isSelected())
+    {
+      int rectWidthAndHight = getWidthOfMarkerSquare();
+      g2.fillRect(startXToUse - rectWidthAndHight / 2, startYToUse - rectWidthAndHight / 2,
+        rectWidthAndHight, rectWidthAndHight);
+      g2.fillRect(endXToUse - rectWidthAndHight / 2, endYToUse - rectWidthAndHight / 2,
+        rectWidthAndHight, rectWidthAndHight);
+    }
   }
 
   /**

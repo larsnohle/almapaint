@@ -32,11 +32,20 @@ abstract class AbstractDrawableShape implements DrawableShape
   protected CoordinatePair translationVector;
   private final static long serialVersionUID = 123457890L;
 
+  /** Is this shape selected? */
+  protected boolean selected;
+
   protected AbstractDrawableShape(int strokeWidth, Color color)
+  {
+    this(strokeWidth, color, false);
+  }
+
+  protected AbstractDrawableShape(int strokeWidth, Color color, boolean selected)
   {
     this.strokeWidth = strokeWidth;
     this.stroke = new BasicStroke(strokeWidth);
     this.color = color;
+    this.selected = selected;
   }
 
   @Override
@@ -93,7 +102,49 @@ abstract class AbstractDrawableShape implements DrawableShape
     throw new UnsupportedOperationException();
   }
 
-  
+  /**
+   * Should mark this shape in some way indicated that it is "selected".
+   */
+  @Override
+  public void select()
+  {
+    selected = true;
+  }
+
+  /**
+   * Should remove any mark to indicate that this shape isn't "selected".
+   */
+  @Override
+  public void unselect()
+  {
+    selected = false;
+  }
+
+  //----------------------------------------------------------
+  // PROTECTED METHODS.
+  //----------------------------------------------------------
+
+  /**
+   * Returns true if this shape is selected and false if it is not.
+   *
+   * @return true if this shape is selected, false otherwise.
+   */
+  protected boolean isSelected()
+  {
+    return selected;
+  }
+
+  protected int getWidthOfMarkerSquare()
+  {
+    int rectWidthAndHight = (int)(strokeWidth * 1.5);
+    if (rectWidthAndHight < 5)
+    {
+      rectWidthAndHight = 5;
+    }
+
+    return rectWidthAndHight;
+  }
+
   //----------------------------------------------------------
   // PRIVATE METHODS.
   //---------------------------------------------------------- 

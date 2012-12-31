@@ -24,7 +24,7 @@ package se.nohle.almapaint;
 enum ToolType
 {
   
-  RECTANGLE("RECTANGLE"), FREEHAND("FREE_HAND"), LINE("LINE"), CIRCLE("CIRCLE"), MOVE("MOVE");
+  RECTANGLE("RECTANGLE"), FREEHAND("FREE_HAND"), LINE("LINE"), CIRCLE("CIRCLE"), SELECT("SELECT");
 
   private String shapeTypeName;
 

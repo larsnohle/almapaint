@@ -41,4 +41,9 @@ interface Callback
    * @return true if fill is seleted, false if not,.
    */
   public boolean fillSelected();
+
+  /***
+   * Called when a shape has been selected or unselected.
+   */
+  public void shapeSelectionChanged();
 }

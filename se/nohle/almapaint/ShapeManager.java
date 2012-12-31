@@ -23,6 +23,9 @@ import java.util.ArrayList;
 import java.util.Stack;
 import java.util.Collections;
 
+/**
+ * Manages the displayed shapes.
+ */
 class ShapeManager
 {
   //----------------------------------------------------------
@@ -46,6 +49,8 @@ class ShapeManager
   private DrawableShape movedShape;
   private DrawableShape shapeDisplayedUnderMove;
   private int indexOfMovedShape = CURRENTLY_NOT_IN_USE;
+
+  private DrawableShape selectedShape;
 
   //PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
   // 
@@ -83,10 +88,16 @@ class ShapeManager
     shapesToReturn = Collections.unmodifiableList(shapes);
   }
 
-  void removeShape(DrawableShape shape)
+  /**
+   * Removes the selected shape, if any.
+   */
+  void removeSelectedShape()
   {
-    removeShapeDoNotAddToAnyStack(shape);
-    undoStack.push(new UndoQueueCommand(OperationType.ADD, shape));
+    if (selectedShape != null)
+    {
+      removeShape(selectedShape);
+      selectedShape = null;
+    }
   }
 
   void moveOperationStarted(DrawableShape movedShape, DrawableShape shapeDisplayedUnderMove)
@@ -124,6 +135,28 @@ class ShapeManager
     undoStack.push(new UndoQueueCommand(OperationType.REPLACE, 
       shapeDisplayedUnderMove, movedShape, indexOfMovedShape));
     resetMoveCache();    
+  }
+
+  /**
+   * Selectes the specified shape.
+   *
+   * @param shapeToSelect The shape to select.
+   */
+  void selectShape(DrawableShape shapeToSelect)
+  {
+    //----------------------------------------------------------
+    // Unselect the currently selected shape, if any.
+    //----------------------------------------------------------
+    if (selectedShape != null)
+    {
+      selectedShape.unselect();
+    }
+
+    //----------------------------------------------------------
+    // Select the shape.
+    //----------------------------------------------------------
+    selectedShape = shapeToSelect;
+    selectedShape.select();
   }
 
   List<DrawableShape> getShapesInReverseOrder()
@@ -184,11 +217,27 @@ class ShapeManager
     return !redoStack.isEmpty();
   }
 
+  /**
+   * Returns true if a shape is selected.
+   *
+   * @return true if a shape is selected.
+   */
+  boolean isAShapeSelected()
+  {
+    return selectedShape != null;
+  }
+
   //PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
   // 
   // PRIVATE METHODS.
   // 
   //PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+
+  private void removeShape(DrawableShape shape)
+  {
+    removeShapeDoNotAddToAnyStack(shape);
+    undoStack.push(new UndoQueueCommand(OperationType.ADD, shape));
+  }
 
   private void removeShapeDoNotAddToAnyStack(DrawableShape shape)
   {
@@ -238,7 +287,6 @@ class ShapeManager
     UndoQueueCommand undoStackCommand = stackToExecuteCommandFrom.pop();
     DrawableShape primaryShape = undoStackCommand.getPrimaryShape();
     DrawableShape secondaryShape = undoStackCommand.getSecondaryShape();
-    int indexOfSecondaryShape = undoStackCommand.getIndexOfSecondaryShape();
 
     switch (undoStackCommand.getOperationType())
     {

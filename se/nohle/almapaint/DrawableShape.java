@@ -61,4 +61,14 @@ public interface DrawableShape extends Serializable, Cloneable
    * @return A clone of this shape.
    */
   public DrawableShape createClone();
+
+  /**
+   * Should mark this shape in some way indicated that it is "selected".
+   */
+  public void select();
+
+  /**
+   * Should remove any mark to indicate that this shape isn't "selected".
+   */
+  public void unselect();
 }

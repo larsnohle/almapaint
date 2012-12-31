@@ -75,6 +75,7 @@ public class MainFrame extends JFrame
   private Action newAction;
   private Action undoAction;
   private Action redoAction;
+  private Action deleteAction;
   private Action saveAction;
   private Action saveAsAction;
   private Action openAction;
@@ -106,7 +107,7 @@ public class MainFrame extends JFrame
   //---------------------------------------------------------- 
   static
   {
-    loadBundle();    
+    loadBundle();
   }
 
   //----------------------------------------------------------
@@ -236,6 +237,15 @@ public class MainFrame extends JFrame
       };
 
 
+    deleteAction = new AbstractAction(getString("DELETE"))
+    {
+      public void actionPerformed(ActionEvent ae)
+      {
+        shapePanel.deleteSelectedShape();
+        setEnabledStateOfActions();
+      }
+    };
+
     saveAction = new AbstractAction(getString("SAVE"))
       {
         public void actionPerformed(ActionEvent ae)
@@ -322,11 +332,11 @@ public class MainFrame extends JFrame
       }
     };
 
-    moveAction  = new AbstractAction(getString("MOVE"))
+    moveAction  = new AbstractAction(getString("SELECT"))
     {
       public void actionPerformed(ActionEvent ae)
       {
-        setCurrentToolType(ToolType.MOVE);
+        setCurrentToolType(ToolType.SELECT);
       }
     };
   }
@@ -415,6 +425,7 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     KeyStroke acceleratorNew = KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_MASK);
     KeyStroke acceleratorUndo = KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_MASK);
     KeyStroke acceleratorRedo = KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.CTRL_MASK);
+    KeyStroke acceleratorDelete = KeyStroke.getKeyStroke(KeyEvent.VK_D, InputEvent.CTRL_MASK);
     KeyStroke acceleratorSave = KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_MASK);
     KeyStroke acceleratorSaveAs = KeyStroke.getKeyStroke(KeyEvent.VK_W, InputEvent.CTRL_MASK);
     KeyStroke acceleratorOpen = KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_MASK);
@@ -472,6 +483,10 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     menuItem = editMenu.add(redoAction);
     menuItem.setMnemonic(KeyEvent.VK_R);
     menuItem.setAccelerator(acceleratorRedo);
+    editMenu.addSeparator();
+    menuItem = editMenu.add(deleteAction);
+    menuItem.setMnemonic(KeyEvent.VK_D);
+    menuItem.setAccelerator(acceleratorDelete);
 
     JMenu toolsMenu = new JMenu(getString("TOOLS"));
     toolsMenu.setMnemonic(KeyEvent.VK_T);
@@ -487,6 +502,7 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     menuItem = toolsMenu.add(circleAction);
     menuItem.setAccelerator(acceleratorCircle);
     menuItem.setMnemonic(KeyEvent.VK_C);
+    toolsMenu.addSeparator();
     menuItem = toolsMenu.add(moveAction);
     menuItem.setAccelerator(acceleratorMove);
     menuItem.setMnemonic(KeyEvent.VK_M);
@@ -554,7 +570,6 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     optionFillMenuItem = new JCheckBoxMenuItem(optionFillAction);
     optionFillMenuItem.setAccelerator(acceleratorFill);
     optionsMenu.add(optionFillMenuItem);
-
 
     optionsMenu.add(strokeWidthMenu);
 
@@ -742,11 +757,12 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
    */
   private void setEnabledStateOfActions() 
   {
-    undoAction.setEnabled(shapePanel.hasAtLeastOneShape());
+    undoAction.setEnabled(shapePanel.hasAtLeastOneShapeInUndoStack());
     redoAction.setEnabled(shapePanel.hasAtLeastOneShapeInRedoList());
+    deleteAction.setEnabled(shapePanel.isAShapeSelected());
     saveAction.setEnabled(saveFile != null && 
       hashCodeOfShapesLastOpen != shapePanel.hashCodeOfShapes()); 
-    saveAsAction.setEnabled(shapePanel.hasAtLeastOneShape()); // TODO: improve
+    saveAsAction.setEnabled(shapePanel.hasAtLeastOneShapeInUndoStack()); // TODO: improve
   }
 
   /**
@@ -1011,6 +1027,15 @@ JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     public boolean fillSelected()
     {
       return MainFrame.this.fillSelected;
+    }
+
+    /**
+     * Called when a shape has been selected or unselected.
+     */
+    @Override
+    public void shapeSelectionChanged()
+    {
+      setEnabledStateOfActions();
     }
   }
 
