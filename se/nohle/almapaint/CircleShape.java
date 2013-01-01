@@ -40,11 +40,12 @@ class CircleShape extends AbstractDrawableShape
    * @param radius The radius of the circle.
    * @param fill true if the circle should be filled.
    * @param strokeWidth The width of the pen.
+   * @param selected true if it should be indicated that the circle is selected.
    */
   CircleShape(Color color, CoordinatePair centerPoint, int radius,
-              boolean fill, int strokeWidth)
+              boolean fill, int strokeWidth, boolean selected)
   {
-    super(strokeWidth, color);
+    super(strokeWidth, color, selected);
         
     this.color = color;
     this.fill = fill;
@@ -70,7 +71,7 @@ class CircleShape extends AbstractDrawableShape
     this(color, centerPoint, 
          (int)Math.sqrt(Math.pow(centerPoint.x - endPoint.x, 2) + 
                         Math.pow(centerPoint.y - endPoint.y, 2)),
-         fill, strokeWidth);
+         fill, strokeWidth, false);
   }
 
   /**
@@ -80,7 +81,7 @@ class CircleShape extends AbstractDrawableShape
    */
   CircleShape(CircleShape that)
   {
-    this(that.color, that.centerPoint, that.radius, that.fill, that.strokeWidth);
+    this(that.color, that.centerPoint, that.radius, that.fill, that.strokeWidth, that.selected);
   }
 
 

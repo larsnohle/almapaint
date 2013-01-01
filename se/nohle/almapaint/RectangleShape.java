@@ -55,7 +55,7 @@ class RectangleShape extends AbstractDrawableShape
    */
   private RectangleShape(RectangleShape that)
   {
-    super(that.strokeWidth, that.color);
+    super(that.strokeWidth, that.color, that.selected);
     this.topLeftX = that.topLeftX;
     this.topLeftY = that.topLeftY;
     this.width = that.width;

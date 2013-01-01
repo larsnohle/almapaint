@@ -63,6 +63,7 @@ class LineShape extends AbstractDrawableShape
    * @param endX The x coordinate of the end point of the line
    * @param endY The y coordinate of the end point of the line
    * @param strokeWidth The width of the pen.
+   * @param selected true if the line is selected.
    */
    private LineShape(Color color, int startX, int startY, int endX, int endY, 
             int strokeWidth, boolean selected)

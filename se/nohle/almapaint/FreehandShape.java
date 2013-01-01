@@ -18,8 +18,6 @@
  */
 package se.nohle.almapaint;
 
-//import se.nohle.almapaint.Utilities;
-
 import java.awt.*;
 import java.util.List;
 import java.util.ArrayList;
@@ -49,7 +47,7 @@ class FreehandShape extends AbstractDrawableShape
    */
   FreehandShape(FreehandShape that)
   {
-    super(that.strokeWidth, that.color);
+    super(that.strokeWidth, that.color, that.selected);
     
     for (CoordinatePair point : that.coordinatePoints)
     {
@@ -108,8 +106,8 @@ class FreehandShape extends AbstractDrawableShape
       CoordinatePair endPointOfLastLine = coordinatePoints.get(coordinatePoints.size() - 1);
       if (translationVector != null)
       {
-        startPointOfFirstLine.add(translationVector);
-        endPointOfLastLine.add(translationVector);
+        startPointOfFirstLine = startPointOfFirstLine.add(translationVector);
+        endPointOfLastLine = endPointOfLastLine.add(translationVector);
       }
 
       g2.fillRect(startPointOfFirstLine.x - rectWidthAndHight / 2,
