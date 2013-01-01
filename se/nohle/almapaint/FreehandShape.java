@@ -95,6 +95,31 @@ class FreehandShape extends AbstractDrawableShape
         g2.drawLine(startPoint.x, startPoint.y, endPoint.x, endPoint.y);
       }
     }
+
+    //----------------------------------------------------------
+    // Is this shape selected? In that case we draw two small rectangles
+    // at the first end of the first line and the last end of the last line.
+    //----------------------------------------------------------
+    if (isSelected())
+    {
+      int rectWidthAndHight = getWidthOfMarkerSquare();
+
+      CoordinatePair startPointOfFirstLine = coordinatePoints.get(0);
+      CoordinatePair endPointOfLastLine = coordinatePoints.get(coordinatePoints.size() - 1);
+      if (translationVector != null)
+      {
+        startPointOfFirstLine.add(translationVector);
+        endPointOfLastLine.add(translationVector);
+      }
+
+      g2.fillRect(startPointOfFirstLine.x - rectWidthAndHight / 2,
+        startPointOfFirstLine.y - rectWidthAndHight / 2,
+        rectWidthAndHight, rectWidthAndHight);
+
+      g2.fillRect(endPointOfLastLine.x - rectWidthAndHight / 2,
+        endPointOfLastLine.y - rectWidthAndHight / 2,
+        rectWidthAndHight, rectWidthAndHight);
+    }
   }
 
 

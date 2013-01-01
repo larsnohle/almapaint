@@ -99,6 +99,28 @@ class RectangleShape extends AbstractDrawableShape
     {
       g2.drawRect(topLeftXToUse, topLeftYToUse, width, height);
     }
+
+    //----------------------------------------------------------
+    // Is this shape selected? In that case we draw four small rectangles
+    // to indicate that it is.
+    //----------------------------------------------------------
+    if (isSelected())
+    {
+      int rectWidthAndHight = getWidthOfMarkerSquare();
+      g2.fillRect(topLeftXToUse - rectWidthAndHight / 2,
+        topLeftYToUse - rectWidthAndHight / 2,
+        rectWidthAndHight, rectWidthAndHight);
+      g2.fillRect(topLeftXToUse - rectWidthAndHight / 2 + width,
+        topLeftYToUse - rectWidthAndHight / 2,
+        rectWidthAndHight, rectWidthAndHight);
+
+      g2.fillRect(topLeftXToUse - rectWidthAndHight / 2,
+        topLeftYToUse - rectWidthAndHight / 2 + height,
+        rectWidthAndHight, rectWidthAndHight);
+      g2.fillRect(topLeftXToUse - rectWidthAndHight / 2 + width,
+        topLeftYToUse - rectWidthAndHight / 2 + height,
+        rectWidthAndHight, rectWidthAndHight);
+    }
   }
 
   /**

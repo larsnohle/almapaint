@@ -115,6 +115,28 @@ class CircleShape extends AbstractDrawableShape
     {
       g2.drawOval(topLeftXToUse, topLeftYToUse, side, side);
     }
+
+    //----------------------------------------------------------
+    // Is this shape selected? In that case we draw four small rectangles
+    // to indicate that it is.
+    //----------------------------------------------------------
+    if (isSelected())
+    {
+      int rectWidthAndHight = getWidthOfMarkerSquare();
+      g2.fillRect(topLeftXToUse - rectWidthAndHight / 2 + side / 2,
+        topLeftYToUse - rectWidthAndHight / 2,
+        rectWidthAndHight, rectWidthAndHight);
+      g2.fillRect(topLeftXToUse - rectWidthAndHight / 2 + side / 2,
+        topLeftYToUse - rectWidthAndHight / 2 + side,
+        rectWidthAndHight, rectWidthAndHight);
+
+      g2.fillRect(topLeftXToUse - rectWidthAndHight / 2,
+        topLeftYToUse - rectWidthAndHight / 2 + side / 2,
+        rectWidthAndHight, rectWidthAndHight);
+      g2.fillRect(topLeftXToUse - rectWidthAndHight / 2 + side,
+        topLeftYToUse - rectWidthAndHight / 2 + side / 2,
+        rectWidthAndHight, rectWidthAndHight);
+    }
   }
 
   /**
