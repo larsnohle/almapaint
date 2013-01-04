@@ -442,6 +442,18 @@ class ShapePanel extends JPanel
   }
 
   /**
+   * Unselects the selected shape, if any.
+   */
+  private void unselectSelectedShape()
+  {
+    if (shapeManager.unselectSelectedShape())
+    {
+      repaint();
+      callback.shapeSelectionChanged();
+    }
+  }
+
+  /**
    * Returns the topmost shape in which the specified point is included.
    *
    * @param point The point to check.
@@ -513,26 +525,32 @@ class ShapePanel extends JPanel
     {
       if (dragStarted)
       {
-        if (isRectangleShapeSelected())
-        {
-          createRectangle(e.getX() - 1, e.getY() - 1);
-        }
-        else if (isFreehandShapeSelected())
-        {
-          addFreehandPointToShapeUnderConstruction(new CoordinatePair(e.getX() - 1, e.getY() - 1));
-          persistFreehandShapeUnderConstruction();
-        }
-        else if (isLineShapeSelected())
-        {
-          createLine(e.getX() - 1, e.getY() - 1);
-        }
-        else if (isCircleShapeSelected())
-        {
-          createCircle(e.getX(), e.getY());
-        }
-        else if (moveOperationOngoing) // A move has ended.
+        if (moveOperationOngoing) // A move has ended.
         {
           shapeManager.moveOperationCompleted();
+        }
+        else
+        {
+          // Not move => unselect the selected shape, if any.
+          unselectSelectedShape();
+
+          if (isRectangleShapeSelected())
+          {
+            createRectangle(e.getX() - 1, e.getY() - 1);
+          }
+          else if (isFreehandShapeSelected())
+          {
+            addFreehandPointToShapeUnderConstruction(new CoordinatePair(e.getX() - 1, e.getY() - 1));
+            persistFreehandShapeUnderConstruction();
+          }
+          else if (isLineShapeSelected())
+          {
+            createLine(e.getX() - 1, e.getY() - 1);
+          }
+          else if (isCircleShapeSelected())
+          {
+            createCircle(e.getX(), e.getY());
+          }
         }
       }
       else
@@ -540,6 +558,10 @@ class ShapePanel extends JPanel
         if (isMoveToolSelected())
         {
           selectShape(new CoordinatePair(e.getX() - 1, e.getY() - 1));
+        }
+        else
+        {
+          unselectSelectedShape();
         }
       }
       

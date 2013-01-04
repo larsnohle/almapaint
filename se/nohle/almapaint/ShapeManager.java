@@ -147,16 +147,33 @@ class ShapeManager
     //----------------------------------------------------------
     // Unselect the currently selected shape, if any.
     //----------------------------------------------------------
-    if (selectedShape != null)
-    {
-      selectedShape.unselect();
-    }
+    unselectSelectedShape();
 
     //----------------------------------------------------------
     // Select the shape.
     //----------------------------------------------------------
     selectedShape = shapeToSelect;
     selectedShape.select();
+  }
+
+  /**
+   * Unselectes the selcted shape.
+   *
+   * @return true if a shape was unselected, false if not.
+   */
+  boolean unselectSelectedShape()
+  {
+    //----------------------------------------------------------
+    // Unselect the currently selected shape, if any.
+    //----------------------------------------------------------
+    if (selectedShape != null)
+    {
+      selectedShape.unselect();
+      selectedShape = null;
+      return true;
+    }
+
+    return false;
   }
 
   List<DrawableShape> getShapesInReverseOrder()
