@@ -128,7 +128,7 @@ class ShapePanel extends JPanel
 
   void deleteSelectedShape()
   {
-    shapeManager.removeSelectedShape();
+    shapeManager.removeSelectedShapes();
     repaint();
     callback.numberOfShapesHasChanged();
   }
@@ -427,13 +427,14 @@ class ShapePanel extends JPanel
    * Marks the top-most shape that is sufficiently close to the specified point.
    *
    * @param point The point to check.
+   * @param unselectOtherSelectedShapes true if the currently selected shapes, if any, should be unselected.
    */
-  private void selectShape(CoordinatePair point)
+  private void selectShape(CoordinatePair point, boolean unselectOtherSelectedShapes)
   {
     DrawableShape shape = findTopmostShapeThatIncludesPoint(point);
     if (shape != null)
     {
-      shapeManager.selectShape(shape);
+      shapeManager.selectShape(shape, unselectOtherSelectedShapes);
       repaint();
 
       // Tell the main frame that a shape has been selected.
@@ -446,7 +447,7 @@ class ShapePanel extends JPanel
    */
   private void unselectSelectedShape()
   {
-    if (shapeManager.unselectSelectedShape())
+    if (shapeManager.unselectSelectedShapes())
     {
       repaint();
       callback.shapeSelectionChanged();
@@ -557,7 +558,7 @@ class ShapePanel extends JPanel
       {
         if (isMoveToolSelected())
         {
-          selectShape(new CoordinatePair(e.getX() - 1, e.getY() - 1));
+          selectShape(new CoordinatePair(e.getX() - 1, e.getY() - 1), !e.isControlDown());
         }
         else
         {

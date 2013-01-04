@@ -18,10 +18,7 @@
  */
 package se.nohle.almapaint;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Stack;
-import java.util.Collections;
+import java.util.*;
 
 /**
  * Manages the displayed shapes.
@@ -50,7 +47,7 @@ class ShapeManager
   private DrawableShape shapeDisplayedUnderMove;
   private int indexOfMovedShape = CURRENTLY_NOT_IN_USE;
 
-  private DrawableShape selectedShape;
+  private List<DrawableShape> selectedShapes = new ArrayList<>();
 
   //PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
   // 
@@ -91,12 +88,12 @@ class ShapeManager
   /**
    * Removes the selected shape, if any.
    */
-  void removeSelectedShape()
+  void removeSelectedShapes()
   {
-    if (selectedShape != null)
+    if (!selectedShapes.isEmpty())
     {
-      removeShape(selectedShape);
-      selectedShape = null;
+      removeShapes(selectedShapes);
+      selectedShapes.clear();
     }
   }
 
@@ -141,19 +138,23 @@ class ShapeManager
    * Selectes the specified shape.
    *
    * @param shapeToSelect The shape to select.
+   * @param unselectOtherSelectedShapes true if the currently selected shapes, if any, should be unselected.
    */
-  void selectShape(DrawableShape shapeToSelect)
+  void selectShape(DrawableShape shapeToSelect, boolean unselectOtherSelectedShapes)
   {
     //----------------------------------------------------------
-    // Unselect the currently selected shape, if any.
+    // Unselect the currently selected shapes, if so indicated.
     //----------------------------------------------------------
-    unselectSelectedShape();
+    if (unselectOtherSelectedShapes)
+    {
+      unselectSelectedShapes();
+    }
 
     //----------------------------------------------------------
     // Select the shape.
     //----------------------------------------------------------
-    selectedShape = shapeToSelect;
-    selectedShape.select();
+    selectedShapes.add(shapeToSelect);
+    shapeToSelect.select();
   }
 
   /**
@@ -161,15 +162,19 @@ class ShapeManager
    *
    * @return true if a shape was unselected, false if not.
    */
-  boolean unselectSelectedShape()
+  boolean unselectSelectedShapes()
   {
     //----------------------------------------------------------
     // Unselect the currently selected shape, if any.
     //----------------------------------------------------------
-    if (selectedShape != null)
+    if (!selectedShapes.isEmpty())
     {
-      selectedShape.unselect();
-      selectedShape = null;
+      for (DrawableShape shape : selectedShapes)
+      {
+        shape.unselect();
+      }
+      selectedShapes.clear();
+
       return true;
     }
 
@@ -241,7 +246,7 @@ class ShapeManager
    */
   boolean isAShapeSelected()
   {
-    return selectedShape != null;
+    return !selectedShapes.isEmpty();
   }
 
   //PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
@@ -250,16 +255,35 @@ class ShapeManager
   // 
   //PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
 
-  private void removeShape(DrawableShape shape)
+  private void removeShapes(List<DrawableShape> shapes)
   {
-    removeShapeDoNotAddToAnyStack(shape);
-    undoStack.push(new UndoQueueCommand(OperationType.ADD, shape));
+    for (DrawableShape shape : shapes)
+    {
+      removeShapeDoNotAddToAnyStack(shape);
+    }
+    undoStack.push(new UndoQueueCommand(OperationType.ADD, shapes));
+  }
+
+  private void removeShapesDoNotAddToAnyStack(List<DrawableShape> shapes)
+  {
+    for (DrawableShape shape : shapes)
+    {
+      removeShapeDoNotAddToAnyStack(shape);
+    }
   }
 
   private void removeShapeDoNotAddToAnyStack(DrawableShape shape)
   {
     shapes.remove(shape);
     shapesToReturn = Collections.unmodifiableList(shapes);
+  }
+
+  private void addShapesDoNotAddToAnyStack(List<DrawableShape> shapes)
+  {
+      for (DrawableShape shape : shapes)
+      {
+        addShapeDoNotAddToAnyStack(shape);
+      }
   }
 
   private void addShapeDoNotAddToAnyStack(DrawableShape shape)
@@ -302,20 +326,20 @@ class ShapeManager
     }
 
     UndoQueueCommand undoStackCommand = stackToExecuteCommandFrom.pop();
-    DrawableShape primaryShape = undoStackCommand.getPrimaryShape();
-    DrawableShape secondaryShape = undoStackCommand.getSecondaryShape();
-
+    List<DrawableShape> shapes = undoStackCommand.getShapes();
     switch (undoStackCommand.getOperationType())
     {
       case ADD:
-        addShapeDoNotAddToAnyStack(primaryShape);
-        stackToAddInverseTo.push(new UndoQueueCommand(OperationType.REMOVE, primaryShape));
+        addShapesDoNotAddToAnyStack(shapes);
+        stackToAddInverseTo.push(new UndoQueueCommand(OperationType.REMOVE, shapes));
         break;
       case REMOVE:
-        removeShapeDoNotAddToAnyStack(primaryShape);
-        stackToAddInverseTo.push(new UndoQueueCommand(OperationType.ADD, primaryShape));
+        removeShapesDoNotAddToAnyStack(shapes);
+        stackToAddInverseTo.push(new UndoQueueCommand(OperationType.ADD, shapes));
         break;
     case REPLACE:
+      DrawableShape primaryShape = undoStackCommand.getPrimaryShape();
+      DrawableShape secondaryShape = undoStackCommand.getSecondaryShape();
       int indexOfPrimaryShape = shapes.indexOf(primaryShape);
 
       removeShapeDoNotAddToAnyStack(primaryShape);
@@ -347,11 +371,20 @@ class ShapeManager
     private DrawableShape primaryShape;
     private DrawableShape secondaryShape;
     private int indexOfSecondaryShape;
+    private List<DrawableShape> shapes = new ArrayList<>();
 
-    private UndoQueueCommand(OperationType operationType, 
-                             DrawableShape primaryShape)
+    private UndoQueueCommand(OperationType operationType,
+                             List<DrawableShape> shapes)
     {
-      this(operationType, primaryShape, null, CURRENTLY_NOT_IN_USE);
+      this(operationType, null, null, CURRENTLY_NOT_IN_USE);
+      this.shapes.addAll(shapes);
+    }
+
+    private UndoQueueCommand(OperationType operationType,
+                             DrawableShape shape)
+    {
+      this(operationType, null, null, CURRENTLY_NOT_IN_USE);
+      this.shapes.add(shape);
     }
 
     private UndoQueueCommand(OperationType operationType, 
@@ -400,5 +433,11 @@ class ShapeManager
     {
       return indexOfSecondaryShape;
     }
+
+    private List<DrawableShape> getShapes()
+    {
+      return new ArrayList<>(shapes);
+    }
+
   }
 }
