@@ -47,7 +47,7 @@ class ShapeManager
   private DrawableShape shapeDisplayedUnderMove;
   private int indexOfMovedShape = CURRENTLY_NOT_IN_USE;
 
-  private List<DrawableShape> selectedShapes = new ArrayList<>();
+  private Set<DrawableShape> selectedShapes = new LinkedHashSet<>();
 
   //PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
   // 
@@ -97,7 +97,15 @@ class ShapeManager
     }
   }
 
-  void moveOperationStarted(DrawableShape movedShape, DrawableShape shapeDisplayedUnderMove)
+  /**
+   * Starts a move operation.
+   *
+   * @param movedShape The shape to move.
+   * @param shapeDisplayedUnderMove The shape that should be displayed during the move.
+   * @param unselectOtherSelectedShapes true if other selected shapes, if any, should be unselected.
+   */
+  void moveOperationStarted(DrawableShape movedShape, DrawableShape shapeDisplayedUnderMove,
+                            boolean unselectOtherSelectedShapes)
   {
     indexOfMovedShape = shapes.indexOf(movedShape);
     if (indexOfMovedShape < 0)
@@ -110,6 +118,9 @@ class ShapeManager
     this.shapeDisplayedUnderMove = shapeDisplayedUnderMove;
     removeShapeDoNotAddToAnyStack(movedShape);
     addShapeDoNotAddToAnyStack(shapeDisplayedUnderMove);
+
+    // We want the shape that is moved to be selected automatically.
+    selectShape(shapeDisplayedUnderMove, unselectOtherSelectedShapes);
   }
 
   void moveOperationShapeHasMoved(CoordinatePair translationVector)
@@ -255,21 +266,22 @@ class ShapeManager
   // 
   //PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
 
-  private void removeShapes(List<DrawableShape> shapes)
+  private void removeShapes(Set<DrawableShape> shapes)
   {
-    for (DrawableShape shape : shapes)
-    {
-      removeShapeDoNotAddToAnyStack(shape);
-    }
-    undoStack.push(new UndoQueueCommand(OperationType.ADD, shapes));
+    List<DrawableShape>  shapesToRemove = new ArrayList<>(shapes);
+    removeShapesDoNotAddToAnyStack(shapesToRemove);
+
+    undoStack.push(new UndoQueueCommand(OperationType.ADD, shapesToRemove));
   }
 
-  private void removeShapesDoNotAddToAnyStack(List<DrawableShape> shapes)
+  private void removeShapesDoNotAddToAnyStack(List<DrawableShape> shapesToRemove)
   {
-    for (DrawableShape shape : shapes)
+    for (DrawableShape shape : shapesToRemove)
     {
-      removeShapeDoNotAddToAnyStack(shape);
+      shapes.remove(shape);
     }
+
+    shapesToReturn = Collections.unmodifiableList(shapes);
   }
 
   private void removeShapeDoNotAddToAnyStack(DrawableShape shape)

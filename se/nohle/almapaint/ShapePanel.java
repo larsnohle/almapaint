@@ -87,6 +87,15 @@ class ShapePanel extends JPanel
   //---------------------------------------------------------- 
 
   /**
+   * Called from the main frame when the escape button has been pressed.
+   */
+  void escapeTyped()
+  {
+    shapeManager.unselectSelectedShapes();
+    repaint();
+  }
+
+  /**
    * Removes all shapes.
    */
   void removeAllShapes()
@@ -398,8 +407,9 @@ class ShapePanel extends JPanel
    * the drag start point and the point specified when calling this method.
    *
    *@param point The current mouse pointer position.
+   *@param unselectOtherSelectedShapes true if other selected shapes, if any, should be unselected.
    */
-  private void moveTopShapeIfAny(CoordinatePair point) 
+  private void moveTopShapeIfAny(CoordinatePair point, boolean unselectOtherSelectedShapes)
   {
     if (!moveOperationOngoing)
     {
@@ -407,8 +417,9 @@ class ShapePanel extends JPanel
 
       if (shapeToMove != null)
       {
-        shapeManager.moveOperationStarted(shapeToMove,shapeToMove.createClone());
+        shapeManager.moveOperationStarted(shapeToMove,shapeToMove.createClone(), unselectOtherSelectedShapes);
         moveOperationOngoing = true;
+        callback.shapeSelectionChanged(); //  moveOperationStarted() selectes the shape that is moved.
       }
     }
     
@@ -560,10 +571,6 @@ class ShapePanel extends JPanel
         {
           selectShape(new CoordinatePair(e.getX() - 1, e.getY() - 1), !e.isControlDown());
         }
-        else
-        {
-          unselectSelectedShape();
-        }
       }
       
       // Clear the cache values.
@@ -596,7 +603,7 @@ class ShapePanel extends JPanel
       }
       else if (isMoveToolSelected())
       {
-        moveTopShapeIfAny(new CoordinatePair(e.getX() - 1, e.getY() - 1));
+        moveTopShapeIfAny(new CoordinatePair(e.getX() - 1, e.getY() - 1), !e.isControlDown());
       }      
     }
   }

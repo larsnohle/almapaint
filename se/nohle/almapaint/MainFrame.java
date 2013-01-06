@@ -183,8 +183,64 @@ public class MainFrame extends JFrame
   private static String getString(String key)
   {
     return languageBundle.getProperty(key);
-  }  
+  }
 
+
+  //----------------------------------------------------------
+  // PROTECTED INSTANCE METHODS.
+  //----------------------------------------------------------
+
+  /**
+   * Creates a root pane in order to fetch presses to the escape button.
+   *
+   * @return The root pane to use.
+   */
+  protected JRootPane createRootPane()
+  {
+    //----------------------------------------------------------
+    // Create a new JRootPane. We're going to modify it a bit
+    // and then return it.
+    //----------------------------------------------------------
+    JRootPane rootPane = new JRootPane();
+
+    //----------------------------------------------------------
+    // Retrieve the KeyStroke for the escape key.
+    //----------------------------------------------------------
+    KeyStroke keyStroke = KeyStroke.getKeyStroke("ESCAPE");
+
+    //----------------------------------------------------------
+    // Create an action that disposes of this dialog when
+    // invoked.
+    //----------------------------------------------------------
+    Action al = new AbstractAction()
+    {
+      public void actionPerformed(ActionEvent ae)
+      {
+        shapePanel.escapeTyped();
+      }
+    };
+
+    //----------------------------------------------------------
+    // Retrieve the InputMap for the JRootPane.
+    //----------------------------------------------------------
+    InputMap im = rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+
+    //----------------------------------------------------------
+    // Tie the escape KeyStroke to the action string 'ESCAPE'.
+    //----------------------------------------------------------
+    im.put(keyStroke, "ESCAPE");
+
+    //----------------------------------------------------------
+    // In the action map for the root pane, tie the 'ESCAPE'
+    // action string to the Action we defined above.
+    //----------------------------------------------------------
+    rootPane.getActionMap().put("ESCAPE", al);
+
+    //----------------------------------------------------------
+    // Return the JRootPane.
+    //----------------------------------------------------------
+    return rootPane;
+  }
 
   //----------------------------------------------------------
   // INSTANCE METHODS.
