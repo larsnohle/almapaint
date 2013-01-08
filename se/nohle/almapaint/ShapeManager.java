@@ -26,11 +26,6 @@ import java.util.*;
 class ShapeManager
 {
   //----------------------------------------------------------
-  // CONSTANTS
-  //---------------------------------------------------------- 
-  private static final int CURRENTLY_NOT_IN_USE = -1;
-
-  //----------------------------------------------------------
   // FIELDS
   //---------------------------------------------------------- 
   /** List containing the shapes to be drawn. */
@@ -45,7 +40,6 @@ class ShapeManager
 
   private DrawableShape movedShape;
   private DrawableShape shapeDisplayedUnderMove;
-  private int indexOfMovedShape = CURRENTLY_NOT_IN_USE;
 
   private Set<DrawableShape> selectedShapes = new LinkedHashSet<>();
 
@@ -107,8 +101,7 @@ class ShapeManager
   void moveOperationStarted(DrawableShape movedShape, DrawableShape shapeDisplayedUnderMove,
                             boolean unselectOtherSelectedShapes)
   {
-    indexOfMovedShape = shapes.indexOf(movedShape);
-    if (indexOfMovedShape < 0)
+    if (shapes.indexOf(movedShape) < 0)
     {
       resetMoveCache();
       throw new IllegalArgumentException("The moved shape is not managed!");
@@ -130,7 +123,7 @@ class ShapeManager
 
   void moveOperationCompleted()
   {
-    if (indexOfMovedShape < 0)
+    if (shapeDisplayedUnderMove == null)
     {
       resetMoveCache();
       throw new IllegalStateException("No move operation is ongoing!");
@@ -141,7 +134,7 @@ class ShapeManager
     shapeDisplayedUnderMove.incorporateTranslationVector();    
 
     undoStack.push(new UndoQueueCommand(OperationType.REPLACE, 
-      shapeDisplayedUnderMove, movedShape, indexOfMovedShape));
+      shapeDisplayedUnderMove, movedShape));
     resetMoveCache();    
   }
 
@@ -357,7 +350,7 @@ class ShapeManager
       removeShapeDoNotAddToAnyStack(primaryShape);
       addShapeDoNotAddToAnyStack(secondaryShape, indexOfPrimaryShape);
      stackToAddInverseTo.push(new UndoQueueCommand(OperationType.REPLACE, 
-        secondaryShape, primaryShape, indexOfPrimaryShape));
+        secondaryShape, primaryShape));
       break;
     default:
       System.out.println("DEFAULT"); 
@@ -368,7 +361,6 @@ class ShapeManager
   {
     movedShape = null;
     shapeDisplayedUnderMove = null;
-    indexOfMovedShape = CURRENTLY_NOT_IN_USE;
   }
 
   //HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
@@ -382,32 +374,29 @@ class ShapeManager
     private OperationType operationType;
     private DrawableShape primaryShape;
     private DrawableShape secondaryShape;
-    private int indexOfSecondaryShape;
     private List<DrawableShape> shapes = new ArrayList<>();
 
     private UndoQueueCommand(OperationType operationType,
                              List<DrawableShape> shapes)
     {
-      this(operationType, null, null, CURRENTLY_NOT_IN_USE);
+      this(operationType, null, null);
       this.shapes.addAll(shapes);
     }
 
     private UndoQueueCommand(OperationType operationType,
                              DrawableShape shape)
     {
-      this(operationType, null, null, CURRENTLY_NOT_IN_USE);
+      this(operationType, null, null);
       this.shapes.add(shape);
     }
 
     private UndoQueueCommand(OperationType operationType, 
                              DrawableShape primaryShape,
-                             DrawableShape secondaryShape,
-                             int indexOfSecondaryShape)
+                             DrawableShape secondaryShape)
     {
       this.operationType = operationType;
       this.primaryShape = primaryShape;
       this.secondaryShape = secondaryShape;
-      this.indexOfSecondaryShape = indexOfSecondaryShape;
     }
 
 
@@ -439,11 +428,6 @@ class ShapeManager
     private void setSecondaryShape(DrawableShape secondaryShape)
     {
       this.secondaryShape = secondaryShape;
-    }
-
-    private int getIndexOfSecondaryShape()
-    {
-      return indexOfSecondaryShape;
     }
 
     private List<DrawableShape> getShapes()
