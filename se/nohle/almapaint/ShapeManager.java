@@ -38,8 +38,7 @@ class ShapeManager
   private Stack<UndoQueueCommand> redoStack = new Stack<>();
 
 
-  private DrawableShape movedShape;
-  private DrawableShape shapeDisplayedUnderMove;
+  private ShapeTupleList movedShapes = new ShapeTupleList();
 
   private Set<DrawableShape> selectedShapes = new LinkedHashSet<>();
 
@@ -95,46 +94,65 @@ class ShapeManager
    * Starts a move operation.
    *
    * @param movedShape The shape to move.
-   * @param shapeDisplayedUnderMove The shape that should be displayed during the move.
-   * @param unselectOtherSelectedShapes true if other selected shapes, if any, should be unselected.
    */
-  void moveOperationStarted(DrawableShape movedShape, DrawableShape shapeDisplayedUnderMove,
-                            boolean unselectOtherSelectedShapes)
+  void moveOperationStarted(DrawableShape movedShape)
   {
-    if (shapes.indexOf(movedShape) < 0)
+    //----------------------------------------------------------
+    // GUARD
+    //----------------------------------------------------------
+    if (!shapes.contains(movedShape))
     {
       resetMoveCache();
       throw new IllegalArgumentException("The moved shape is not managed!");
     }
 
-    this.movedShape = movedShape;
-    this.shapeDisplayedUnderMove = shapeDisplayedUnderMove;
-    removeShapeDoNotAddToAnyStack(movedShape);
-    addShapeDoNotAddToAnyStack(shapeDisplayedUnderMove);
-
     // We want the shape that is moved to be selected automatically.
-    selectShape(shapeDisplayedUnderMove, unselectOtherSelectedShapes);
+    selectShape(movedShape, false);
+
+    //----------------------------------------------------------
+    //  Loop over a copy of the set containing the selected shapes.
+    // We us a copy as we want to modify the original sest.
+    //----------------------------------------------------------
+    Set<DrawableShape> currentLySelectedShapes = getCopyOfSelectedShapesSet();
+    for (DrawableShape shapeToMove : currentLySelectedShapes)
+    {
+      // Remove original shape. If UNDO is executed later the original objects should be unselected.
+      removeShapeDoNotAddToAnyStack(shapeToMove);
+      unselectSelectedShape(shapeToMove);
+
+      // Clone the shape so we have an object we can translate.
+      DrawableShape shapeToDisplayUnderMove = shapeToMove.createClone();
+
+      // Add the clone to the managed set, the selected set and the moved set.
+      addShapeDoNotAddToAnyStack(shapeToDisplayUnderMove);
+      selectShape(shapeToDisplayUnderMove, false);
+      movedShapes.add(new ShapeTuple(shapeToMove, shapeToDisplayUnderMove));
+    }
   }
 
   void moveOperationShapeHasMoved(CoordinatePair translationVector)
   {
-    shapeDisplayedUnderMove.setTranslationVector(translationVector);
+    for (ShapeTuple shapeTuple : movedShapes)
+    {
+      shapeTuple.getSecondShape().setTranslationVector(translationVector);
+    }
   }
 
   void moveOperationCompleted()
   {
-    if (shapeDisplayedUnderMove == null)
+    if (movedShapes.size() == 0)
     {
-      resetMoveCache();
       throw new IllegalStateException("No move operation is ongoing!");
     }
     
     // Tell the shape to calculate its new coordinates based on the 
     // delta it has moved.
-    shapeDisplayedUnderMove.incorporateTranslationVector();    
+    for (ShapeTuple shapeTuple : movedShapes)
+    {
+      shapeTuple.getSecondShape().incorporateTranslationVector();
+    }
 
-    undoStack.push(new UndoQueueCommand(OperationType.REPLACE, 
-      shapeDisplayedUnderMove, movedShape));
+    undoStack.push(new UndoQueueCommand(OperationType.REPLACE, movedShapes.swapItemsInTuples()));
     resetMoveCache();    
   }
 
@@ -146,6 +164,14 @@ class ShapeManager
    */
   void selectShape(DrawableShape shapeToSelect, boolean unselectOtherSelectedShapes)
   {
+    //----------------------------------------------------------
+    // The shape to select must be managed.
+    //----------------------------------------------------------
+    if (!shapes.contains(shapeToSelect))
+    {
+      throw new IllegalArgumentException("The selected shape is not managed!");
+    }
+
     //----------------------------------------------------------
     // Unselect the currently selected shapes, if so indicated.
     //----------------------------------------------------------
@@ -162,7 +188,7 @@ class ShapeManager
   }
 
   /**
-   * Unselectes the selcted shape.
+   * Unselectes all selcted shapes.
    *
    * @return true if a shape was unselected, false if not.
    */
@@ -185,6 +211,34 @@ class ShapeManager
     return false;
   }
 
+  /**
+   * Unselects the specified selected shape.
+   *
+   * @param shapeToUnselect The shape to unselect.
+   */
+  private void unselectSelectedShape(DrawableShape shapeToUnselect)
+  {
+    selectedShapes.remove(shapeToUnselect);
+    shapeToUnselect.unselect();
+  }
+
+  /**
+   * Returs of copy of the set containg selected shapes.
+   *
+   * @return A copy of the selected shapes set.
+   */
+  private  Set<DrawableShape> getCopyOfSelectedShapesSet()
+  {
+    Set<DrawableShape> currentLySelectedShapes = new LinkedHashSet<>();
+    currentLySelectedShapes.addAll(selectedShapes);
+    return currentLySelectedShapes;
+  }
+
+  /**
+   * Returns the managed shapes in reverse order.
+   *
+   * @return The managed shapes in reverse order.
+   */
   List<DrawableShape> getShapesInReverseOrder()
   {
     List<DrawableShape> copy = new ArrayList<>(shapes);
@@ -193,6 +247,9 @@ class ShapeManager
     return copy;
   }
 
+  /**
+   * Undos the last operation.
+   */
   void undoLastOperation()
   {
     if (undoStack.isEmpty())
@@ -203,6 +260,9 @@ class ShapeManager
     executeUndoCommandFromStack(undoStack, redoStack);
   }
 
+  /**
+   * Redos the last operation.
+   */
   void redoLastOperation()
   {
     if (redoStack.isEmpty())
@@ -211,16 +271,6 @@ class ShapeManager
     }
 
     executeUndoCommandFromStack(redoStack, undoStack);
-  }
-  
-  /**
-   * Determines if there is at least one managed shape.
-   *
-   * @return true if least one shape is managed, false if not.
-   */
-  boolean hasAtLeastOneShape()
-  {
-    return !shapes.isEmpty();
   }
 
   /**
@@ -343,24 +393,50 @@ class ShapeManager
         stackToAddInverseTo.push(new UndoQueueCommand(OperationType.ADD, shapes));
         break;
     case REPLACE:
-      DrawableShape primaryShape = undoStackCommand.getPrimaryShape();
-      DrawableShape secondaryShape = undoStackCommand.getSecondaryShape();
-      int indexOfPrimaryShape = shapes.indexOf(primaryShape);
+      ShapeTupleList shapeTupleList= undoStackCommand.getShapeTupleList();
+      for (ShapeTuple shapeTuple : shapeTupleList)
+      {
+        DrawableShape shapeToReplace = shapeTuple.getFirstShape();
+        DrawableShape shapeToReplaceWith = shapeTuple.getSecondShape();
+        int indexOfPrimaryShape = shapes.indexOf(shapeToReplace);
 
-      removeShapeDoNotAddToAnyStack(primaryShape);
-      addShapeDoNotAddToAnyStack(secondaryShape, indexOfPrimaryShape);
-     stackToAddInverseTo.push(new UndoQueueCommand(OperationType.REPLACE, 
-        secondaryShape, primaryShape));
+        removeShapeDoNotAddToAnyStack(shapeToReplace);
+        addShapeDoNotAddToAnyStack(shapeToReplaceWith, indexOfPrimaryShape);
+
+      }
+      // Just revert the shape lists in order to create the inverse operation.
+      stackToAddInverseTo.push(new UndoQueueCommand(OperationType.REPLACE, shapeTupleList.swapItemsInTuples()));
+
       break;
     default:
       System.out.println("DEFAULT"); 
     }
   }
-  
+
+  /**
+   * Reset the move cache.
+   */
   private void resetMoveCache()
   {
-    movedShape = null;
-    shapeDisplayedUnderMove = null;
+    movedShapes.clear();
+  }
+
+  /**
+   * Prints the managed shapes to std out.
+   */
+  private void printManagedShapes()
+  {
+    System.out.println("*** ShapeManager.shapes: ");
+    for (DrawableShape shape : shapes)
+    {
+      System.out.println(shape);
+    }
+
+    System.out.println("\n***shapesToReturn: ");
+    for (DrawableShape shape : shapesToReturn)
+    {
+      System.out.println(shape);
+    }
   }
 
   //HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
@@ -371,32 +447,28 @@ class ShapeManager
 
   private class UndoQueueCommand
   {
-    private OperationType operationType;
-    private DrawableShape primaryShape;
-    private DrawableShape secondaryShape;
-    private List<DrawableShape> shapes = new ArrayList<>();
+    private final OperationType operationType;
+    private final List<DrawableShape> shapes = new ArrayList<>();
+    private final ShapeTupleList shapeTupleList = new ShapeTupleList();
 
     private UndoQueueCommand(OperationType operationType,
                              List<DrawableShape> shapes)
     {
-      this(operationType, null, null);
+      this.operationType = operationType;
       this.shapes.addAll(shapes);
     }
 
     private UndoQueueCommand(OperationType operationType,
                              DrawableShape shape)
     {
-      this(operationType, null, null);
+      this.operationType = operationType;
       this.shapes.add(shape);
     }
 
-    private UndoQueueCommand(OperationType operationType, 
-                             DrawableShape primaryShape,
-                             DrawableShape secondaryShape)
+    private UndoQueueCommand(OperationType operationType, ShapeTupleList shapeTupleList)
     {
       this.operationType = operationType;
-      this.primaryShape = primaryShape;
-      this.secondaryShape = secondaryShape;
+      this.shapeTupleList.initializeFrom(shapeTupleList);
     }
 
 
@@ -405,35 +477,160 @@ class ShapeManager
       return operationType;
     }
 
-    private void setOperationType(OperationType operationType)
-    {
-      this.operationType = operationType;
-    }
-
-    private DrawableShape getPrimaryShape()
-    {
-      return primaryShape;
-    }
-
-    private void setPrimaryShape(DrawableShape primaryShape)
-    {
-      this.primaryShape = primaryShape;
-    }
-
-    private DrawableShape getSecondaryShape()
-    {
-      return secondaryShape;
-    }
-
-    private void setSecondaryShape(DrawableShape secondaryShape)
-    {
-      this.secondaryShape = secondaryShape;
-    }
-
     private List<DrawableShape> getShapes()
     {
       return new ArrayList<>(shapes);
     }
 
+    public ShapeTupleList getShapeTupleList()
+    {
+      return shapeTupleList;
+    }
   }
+
+  //HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
+  //
+  // INNER CLASS
+  //
+  //HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
+  private static class ShapeTuple
+  {
+    private final DrawableShape firstShape;
+    private final DrawableShape secondShape;
+
+    private ShapeTuple(DrawableShape firstShape, DrawableShape secondShape)
+    {
+      this.firstShape = firstShape;
+      this.secondShape = secondShape;
+    }
+
+    public DrawableShape getFirstShape()
+    {
+      return firstShape;
+    }
+
+    public DrawableShape getSecondShape()
+    {
+      return secondShape;
+    }
+  }
+
+  //HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
+  //
+  // INNER CLASS
+  //
+  //HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
+  private static class ShapeTupleList implements Iterable<ShapeTuple>
+  {
+    private static List<DrawableShape> firstShapeList = new ArrayList<>();
+    private static List<DrawableShape> secondShapeList = new ArrayList<>();
+
+    private ShapeTupleList()
+    {
+    }
+
+    /**
+     * Copies all elements from the specified ShapeTupleList to this ShapeTupleList.
+     *
+     * @param listToCopy The ShapeTupleList to initialize this object from.
+     */
+    private void initializeFrom(ShapeTupleList listToCopy)
+    {
+      firstShapeList.clear();
+      secondShapeList.clear();
+
+      for (ShapeTuple shapeTuple : listToCopy)
+      {
+        firstShapeList.add(shapeTuple.getFirstShape());
+        secondShapeList.add(shapeTuple.getSecondShape());
+      }
+    }
+
+    private void add(ShapeTuple shapeTuple)
+    {
+      firstShapeList.add(shapeTuple.getFirstShape());
+      secondShapeList.add(shapeTuple.getSecondShape());
+    }
+
+    private int size()
+    {
+      return firstShapeList.size();
+    }
+
+    private void clear()
+    {
+      firstShapeList.clear();
+      secondShapeList.clear();
+    }
+
+    private ShapeTupleList swapItemsInTuples()
+    {
+      List<DrawableShape> tmpList = firstShapeList;
+      firstShapeList = secondShapeList;
+      secondShapeList = tmpList;
+
+      return this;
+    }
+
+    //IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
+    // Implementation of the Iterable interface.
+    //IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
+
+    /**
+     * Returns an iterator over a set of elements of type T.
+     *
+     * @return an Iterator.
+     */
+    @Override
+    public Iterator<ShapeTuple> iterator()
+    {
+      return new ShapeTupleIterator();
+    }
+
+    private class ShapeTupleIterator implements Iterator<ShapeTuple>
+    {
+      private int currentElement = 0;
+      /**
+       * Returns {@code true} if the iteration has more elements.
+       * (In other words, returns {@code true} if {@link #next} would
+       * return an element rather than throwing an exception.)
+       *
+       * @return {@code true} if the iteration has more elements
+       */
+      @Override
+      public boolean hasNext()
+      {
+        return currentElement < firstShapeList.size();
+      }
+
+      /**
+       * Returns the next element in the iteration.
+       *
+       * @return the next element in the iteration
+       * @throws java.util.NoSuchElementException
+       *          if the iteration has no more elements
+       */
+      @Override
+      public ShapeTuple next()
+      {
+        if (!hasNext())
+        {
+          throw new NoSuchElementException();
+        }
+
+        ShapeTuple shapeTuple =
+          new ShapeTuple(firstShapeList.get(currentElement), secondShapeList.get(currentElement));
+          currentElement++;
+        return shapeTuple;
+      }
+
+      @Override
+      public void remove()
+      {
+        throw new UnsupportedOperationException("remove is not supported");
+      }
+    }
+
+  }
+
 }

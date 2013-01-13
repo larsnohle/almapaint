@@ -179,7 +179,10 @@ class RectangleShape extends AbstractDrawableShape
   @Override
   public String toString()
   {
-    return "x: " + topLeftX + " y: " + topLeftY + " width: " + width + " height: " + height;
+    String tx = translationVector != null ? "" + translationVector.x : "";
+    String ty = translationVector != null ? "" + translationVector.y : "";
+    return "hashcode: "+ hashCode() + " x: " + topLeftX + " y: " + topLeftY + " width: " + width + " height: " + height +
+      "translationVector.x:" + tx + " translationVector.y: " + ty;
   }
 
   //PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP

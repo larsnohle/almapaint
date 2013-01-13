@@ -407,9 +407,8 @@ class ShapePanel extends JPanel
    * the drag start point and the point specified when calling this method.
    *
    *@param point The current mouse pointer position.
-   *@param unselectOtherSelectedShapes true if other selected shapes, if any, should be unselected.
    */
-  private void moveTopShapeIfAny(CoordinatePair point, boolean unselectOtherSelectedShapes)
+  private void moveTopShapeIfAny(CoordinatePair point)
   {
     if (!moveOperationOngoing)
     {
@@ -417,7 +416,7 @@ class ShapePanel extends JPanel
 
       if (shapeToMove != null)
       {
-        shapeManager.moveOperationStarted(shapeToMove,shapeToMove.createClone(), unselectOtherSelectedShapes);
+        shapeManager.moveOperationStarted(shapeToMove);
         moveOperationOngoing = true;
         callback.shapeSelectionChanged(); //  moveOperationStarted() selectes the shape that is moved.
       }
@@ -603,7 +602,7 @@ class ShapePanel extends JPanel
       }
       else if (isMoveToolSelected())
       {
-        moveTopShapeIfAny(new CoordinatePair(e.getX() - 1, e.getY() - 1), !e.isControlDown());
+        moveTopShapeIfAny(new CoordinatePair(e.getX() - 1, e.getY() - 1));
       }      
     }
   }
