@@ -33,18 +33,9 @@ class FileHandler
     throws IOException
   {
     // Write to file.
-    ObjectOutputStream oos = null;
-    try
+    try  (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(fileToSaveIn)))
     {
-      oos = new ObjectOutputStream(new FileOutputStream(fileToSaveIn));
       oos.writeObject(shapes);
-    }
-    finally
-    {
-      if (oos != null)
-      {
-        oos.close();
-      }
     }
   }
 
@@ -59,19 +50,10 @@ class FileHandler
     throws IOException,ClassNotFoundException
   {
     // Read from a file.
-    List<DrawableShape> shapes = null;
-    ObjectInputStream ois = null;
-    try
+    List<DrawableShape> shapes;
+    try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream(fileToLoadFrom)))
     {
-      ois = new ObjectInputStream(new FileInputStream(fileToLoadFrom));
       shapes = (List<DrawableShape>)ois.readObject();
-    }
-    finally
-    {      
-      if (ois != null)
-      {
-        ois.close();
-      }
     }
 
     return shapes;
