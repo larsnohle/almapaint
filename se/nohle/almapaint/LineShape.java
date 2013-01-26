@@ -19,16 +19,23 @@
 package se.nohle.almapaint;
 
 import java.awt.*;
+import static se.nohle.almapaint.Utilities.pointInRectangle;
 
 /**
  * A shape in form of a line,
  */
 class LineShape extends AbstractDrawableShape
 {
+  private enum LineResizeArea
+  {
+    FIRST_POINT, SECOND_POINT
+  }
+
   private int startX; 
   private int startY; 
   private int endX; 
   private int endY; 
+  private LineResizeArea selectedResizeArea;
 
   /**
    * Constructor
@@ -52,6 +59,8 @@ class LineShape extends AbstractDrawableShape
   {
     this(that.color, that.startX, that.startY, that.endX, that.endY,
       that.strokeWidth, that.selected);
+
+    copyTranslationAndResizeVectors(that);
   }
 
   /**
@@ -97,6 +106,14 @@ class LineShape extends AbstractDrawableShape
       endXToUse += translationVector.x;
       endYToUse+= translationVector.y;
     }
+    else if (resizeVector != null)
+    {
+      TwoPointsTuple tpt = calculateLinePointsWithRegardingToResizeVector();
+      startXToUse = tpt.getStartX();
+      startYToUse = tpt.getStartY();
+      endXToUse = tpt.getEndX();
+      endYToUse = tpt.getEndY();
+    }
 
     Graphics2D g2 = (Graphics2D)g;
     g2.drawLine(startXToUse, startYToUse, endXToUse, endYToUse);
@@ -128,6 +145,49 @@ class LineShape extends AbstractDrawableShape
   }
 
   /**
+   * Should return true if the specified point is located in a resize area of the shape.
+   *
+   * @param point The point to check.
+   * @return true if point is located in a resize area.
+   */
+  @Override
+  public boolean isPointInResizeArea(CoordinatePair point)
+  {
+    if (!isSelected())
+    {
+      return false;
+    }
+
+    int rectWidthAndHight = getWidthOfMarkerSquare();
+    int leftXOfFirstSquare = startX - rectWidthAndHight / 2;
+    int leftXOfSecondSquare = endX- rectWidthAndHight / 2;
+    int topYOfFirstSquare = startY - rectWidthAndHight / 2;
+    int topYOfSecondSquare = endY - rectWidthAndHight / 2;
+
+    return pointInRectangle(point, leftXOfFirstSquare, topYOfFirstSquare, rectWidthAndHight, rectWidthAndHight)||
+      pointInRectangle(point, leftXOfSecondSquare, topYOfSecondSquare, rectWidthAndHight, rectWidthAndHight);
+  }
+
+  /**
+   * Sets the resize area that the user has selected.
+   */
+  @Override
+  public void setSelectedResizeArea(CoordinatePair point)
+  {
+    double distanceToFirstPoint = Utilities.distanceBetweenPoints(startX, startY, point);
+    double distanceToSecondPoint = Utilities.distanceBetweenPoints(endX, endY, point);
+
+    if (distanceToFirstPoint < distanceToSecondPoint)
+    {
+      selectedResizeArea = LineResizeArea.FIRST_POINT;
+    }
+    else
+    {
+      selectedResizeArea = LineResizeArea.SECOND_POINT;
+    }
+  }
+
+  /**
    * Translates the coordinates used to draw this shape by the amount specified
    * by the translation vector, which then is nulled out.
    */
@@ -147,6 +207,22 @@ class LineShape extends AbstractDrawableShape
   }
 
   /**
+   * Translates the coordinates of the start point, the width and the height by the amount specified
+   * by the resize vector, which then is nulled out.
+   */
+  @Override
+  public void incorporateResizeVector()
+  {
+    TwoPointsTuple tpt = calculateLinePointsWithRegardingToResizeVector();
+    startX = tpt.getStartX();
+    startY = tpt.getStartY();
+    endX = tpt.getEndX();
+    endY = tpt.getEndY();
+
+    super.incorporateResizeVector();
+  }
+
+  /**
    * Creates a clone of this shape.
    *
    * @return A clone of this shape.
@@ -156,4 +232,82 @@ class LineShape extends AbstractDrawableShape
   {
     return new LineShape(this);
   }
+
+  //----------------------------------------------------------
+  // PRIVATE METHODS.
+  //----------------------------------------------------------
+
+  /**
+   * Calculated the start and end points this line shape should have based on the resize vector.
+   *
+   * @return The start- and end-points this line shape should have with regards to the resize vector.
+   */
+  private TwoPointsTuple calculateLinePointsWithRegardingToResizeVector()
+  {
+    int startXToUse = startX;
+    int startYToUse = startY;
+    int endXToUse = endX;
+    int endYToUse = endY;
+
+    if (selectedResizeArea == LineResizeArea.FIRST_POINT)
+    {
+      startXToUse += resizeVector.x;
+      startYToUse += resizeVector.y;
+    }
+    else if (selectedResizeArea == LineResizeArea.SECOND_POINT)
+    {
+      endXToUse += resizeVector.x;
+      endYToUse += resizeVector.y;
+    }
+
+    return new TwoPointsTuple(startXToUse, startYToUse, endXToUse, endYToUse);
+  }
+
+
+  //HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
+  //
+  // INNER CLASS
+  //
+  //PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+
+  /**
+   * Struct like class containing the same data that is used by the surrounding class
+   * to define where to draw the line.
+   */
+  private static class TwoPointsTuple
+  {
+    private final int startX;
+    private final int startY;
+    private final int endX;
+    private final int endY;
+
+    private TwoPointsTuple(int startX, int startY, int endX, int endY)
+    {
+      this.startX = startX;
+      this.startY = startY;
+      this.endX = endX;
+      this.endY = endY;
+    }
+
+    public int getStartX()
+    {
+      return startX;
+    }
+
+    public int getStartY()
+    {
+      return startY;
+    }
+
+    public int getEndX()
+    {
+      return endX;
+    }
+
+    public int getEndY()
+    {
+      return endY;
+    }
+  }
+
 }

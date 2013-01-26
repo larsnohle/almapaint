@@ -19,17 +19,25 @@
 package se.nohle.almapaint;
 
 import java.awt.*;
+import static se.nohle.almapaint.Utilities.pointInRectangle;
 
 /**
  * A rectangular shape,
  */
 class RectangleShape extends AbstractDrawableShape
 {
+  enum RectangleResizeArea
+  {
+    TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT
+  }
+
   private int topLeftX; 
   private int topLeftY; 
   private int width;
   private int height;
   private boolean fill;
+
+  private RectangleResizeArea selectedResizeArea;
 
   /**
    * Constructor
@@ -62,11 +70,7 @@ class RectangleShape extends AbstractDrawableShape
     this.height = that.height;
     this.fill = that.fill;
 
-    if (that.translationVector != null)
-    {
-      this.translationVector = new CoordinatePair(that.translationVector.x, 
-                                                  that.translationVector.y);
-     }
+    copyTranslationAndResizeVectors(that);
   }  
 
   @Override
@@ -76,6 +80,8 @@ class RectangleShape extends AbstractDrawableShape
 
     int topLeftXToUse = topLeftX;
     int topLeftYToUse = topLeftY;
+    int widthToUse = width;
+    int heightToUse = height;
 
     //----------------------------------------------------------
     // Should we translate the coordinate system (a.k.a. is this rectangle
@@ -86,6 +92,14 @@ class RectangleShape extends AbstractDrawableShape
       topLeftXToUse += translationVector.x;
       topLeftYToUse += translationVector.y;
     }
+   else if (resizeVector != null)
+    {
+      CoordinatesWithAndHeight cwh = calculateCoordinatedWidthAndHeightFromResizeParams();
+      topLeftXToUse = cwh.getX();
+      topLeftYToUse = cwh.getY();
+      widthToUse = cwh.getWidth();
+      heightToUse = cwh.getHeight();
+    }
 
     //----------------------------------------------------------
     // Should the triangle be filled?
@@ -93,11 +107,11 @@ class RectangleShape extends AbstractDrawableShape
     Graphics2D g2 = (Graphics2D)g;
     if (fill)
     {
-      g2.fillRect(topLeftXToUse, topLeftYToUse, width, height);
+      g2.fillRect(topLeftXToUse, topLeftYToUse, widthToUse, heightToUse);
     }
     else
     {
-      g2.drawRect(topLeftXToUse, topLeftYToUse, width, height);
+      g2.drawRect(topLeftXToUse, topLeftYToUse, widthToUse, heightToUse);
     }
 
     //----------------------------------------------------------
@@ -110,15 +124,15 @@ class RectangleShape extends AbstractDrawableShape
       g2.fillRect(topLeftXToUse - rectWidthAndHight / 2,
         topLeftYToUse - rectWidthAndHight / 2,
         rectWidthAndHight, rectWidthAndHight);
-      g2.fillRect(topLeftXToUse - rectWidthAndHight / 2 + width,
+      g2.fillRect(topLeftXToUse - rectWidthAndHight / 2 + widthToUse,
         topLeftYToUse - rectWidthAndHight / 2,
         rectWidthAndHight, rectWidthAndHight);
 
       g2.fillRect(topLeftXToUse - rectWidthAndHight / 2,
-        topLeftYToUse - rectWidthAndHight / 2 + height,
+        topLeftYToUse - rectWidthAndHight / 2 + heightToUse,
         rectWidthAndHight, rectWidthAndHight);
-      g2.fillRect(topLeftXToUse - rectWidthAndHight / 2 + width,
-        topLeftYToUse - rectWidthAndHight / 2 + height,
+      g2.fillRect(topLeftXToUse - rectWidthAndHight / 2 + widthToUse,
+        topLeftYToUse - rectWidthAndHight / 2 + heightToUse,
         rectWidthAndHight, rectWidthAndHight);
     }
   }
@@ -147,7 +161,65 @@ class RectangleShape extends AbstractDrawableShape
      pointInRectangle(point, startXRight, startYTop, strokeWidth, height)||
      pointInRectangle(point, startXLeft, startYBottom, width, strokeWidth);
   }
-  
+
+  /**
+   * Should return true if the specified point is located in a resize area of the shape.
+   *
+   * @param point The point to check.
+   * @return true if point is located in a resize area.
+   */
+  @Override
+  public boolean isPointInResizeArea(CoordinatePair point)
+  {
+    if (!isSelected())
+    {
+      return false;
+    }
+
+    int rectWidthAndHight = getWidthOfMarkerSquare();
+    int leftXOfLeftSquares = topLeftX - rectWidthAndHight / 2;
+    int leftXOfRightSquares = topLeftX + width - rectWidthAndHight / 2;
+    int topYOfTopSquares = topLeftY - rectWidthAndHight / 2;
+    int topYOfBottomSquares = topLeftY + height - rectWidthAndHight / 2;
+
+
+    return pointInRectangle(point, leftXOfLeftSquares, topYOfTopSquares, rectWidthAndHight, rectWidthAndHight)||
+      pointInRectangle(point, leftXOfRightSquares, topYOfTopSquares, rectWidthAndHight, rectWidthAndHight)||
+      pointInRectangle(point, leftXOfLeftSquares, topYOfBottomSquares, rectWidthAndHight, rectWidthAndHight)||
+      pointInRectangle(point, leftXOfRightSquares, topYOfBottomSquares, rectWidthAndHight, rectWidthAndHight);
+  }
+
+  /**
+   * Sets the resize area that the user has selected.
+   */
+  @Override
+  public void setSelectedResizeArea(CoordinatePair point)
+  {
+    int rectWidthAndHight = getWidthOfMarkerSquare();
+    int leftXOfLeftSquares = topLeftX - rectWidthAndHight / 2;
+    int leftXOfRightSquares = topLeftX + width - rectWidthAndHight / 2;
+    int topYOfTopSquares = topLeftY - rectWidthAndHight / 2;
+    int topYOfBottomSquares = topLeftY + height - rectWidthAndHight / 2;
+
+
+    if (pointInRectangle(point, leftXOfLeftSquares, topYOfTopSquares, rectWidthAndHight, rectWidthAndHight))
+    {
+      selectedResizeArea = RectangleResizeArea.TOP_LEFT;
+    }
+    else if (pointInRectangle(point, leftXOfRightSquares, topYOfTopSquares, rectWidthAndHight, rectWidthAndHight))
+    {
+      selectedResizeArea = RectangleResizeArea.TOP_RIGHT;
+    }
+    else if (pointInRectangle(point, leftXOfLeftSquares, topYOfBottomSquares, rectWidthAndHight, rectWidthAndHight))
+    {
+      selectedResizeArea = RectangleResizeArea.BOTTOM_LEFT;
+    }
+    else if (pointInRectangle(point, leftXOfRightSquares, topYOfBottomSquares, rectWidthAndHight, rectWidthAndHight))
+    {
+      selectedResizeArea = RectangleResizeArea.BOTTOM_RIGHT;
+    }
+  }
+
   /**
    * Translates the coordinates used to draw this shape by the amount specified
    * by the translation vector, which then is nulled out.
@@ -164,6 +236,21 @@ class RectangleShape extends AbstractDrawableShape
     super.incorporateTranslationVector();
   }
 
+  /**
+   * Translates the coordinates of the start point, the width and the height by the amount specified
+   * by the resize vector, which then is nulled out.
+   */
+  @Override
+  public void incorporateResizeVector()
+  {
+    CoordinatesWithAndHeight coordinatesWithAndHeight = calculateCoordinatedWidthAndHeightFromResizeParams();
+    topLeftX = coordinatesWithAndHeight.getX();
+    topLeftY = coordinatesWithAndHeight.getY();
+    width = coordinatesWithAndHeight.getWidth();
+    height = coordinatesWithAndHeight.getHeight();
+
+    super.incorporateResizeVector();
+  }
 
   /**
    * Creates a clone of this shape.
@@ -181,29 +268,231 @@ class RectangleShape extends AbstractDrawableShape
   {
     String tx = translationVector != null ? "" + translationVector.x : "";
     String ty = translationVector != null ? "" + translationVector.y : "";
+    String rx = resizeVector != null ? "" + resizeVector.x : "";
+    String ry = resizeVector != null ? "" + resizeVector.y : "";
     return "hashcode: "+ hashCode() + " x: " + topLeftX + " y: " + topLeftY + " width: " + width + " height: " + height +
-      "translationVector.x:" + tx + " translationVector.y: " + ty;
+      "translationVector.x: " + tx + " translationVector.y: " + ty + " resizex: " + rx + " resizey: " + ry;
   }
 
   //PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
   // 
   // PRIVATE METHODS.
   // 
-  //PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+  //PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+
 
   /**
-   * Determines if the specified point is inside the specified rectangle.
+   * Calculates the new coordinates of the top left corner, and the new width and height of this rectangle
+   * based on the resize vector.
+   *
+   * @return The newly calculated coordinate, width and height.
    */
-  private static boolean pointInRectangle(CoordinatePair point, 
-                                          int topLeftX, int topLeftY, 
-                                          int width, int height)
+  private CoordinatesWithAndHeight calculateCoordinatedWidthAndHeightFromResizeParams()
   {
-    if (point.x < topLeftX || point.x > topLeftX + width || 
-          point.y < topLeftY || point.y > topLeftY + height) {
-        return false;
-      }
-    
-    return true;
+    if (selectedResizeArea == RectangleResizeArea.BOTTOM_RIGHT)
+    {
+      return calculateCoordinatedWidthAndHeightResizingLowerRight();
+    }
+    else if (selectedResizeArea == RectangleResizeArea.BOTTOM_LEFT)
+    {
+      return calculateCoordinatedWidthAndHeightResizingLowerLeft();
+    }
+    else if (selectedResizeArea == RectangleResizeArea.TOP_LEFT)
+    {
+      return calculateCoordinatedWidthAndHeightResizingUpperLeft();
+    }
+    else if (selectedResizeArea == RectangleResizeArea.TOP_RIGHT)
+    {
+      return calculateCoordinatedWidthAndHeightResizingUpperRight();
+    }
+
+    throw new IllegalStateException("calculateCoordinatedWidthAndHeightFromResizeParams() called " +
+      "when no resize area has been selected!");
+  }
+
+  private CoordinatesWithAndHeight calculateCoordinatedWidthAndHeightResizingLowerRight()
+  {
+    CoordinatesWithAndHeight cwh = new CoordinatesWithAndHeight();
+    int originalXOfSelectedResizeArea = topLeftX + width;
+    int originalYOfSelectedResizeArea = topLeftY + height;
+    int newXOfSelectedResizeArea = originalXOfSelectedResizeArea + resizeVector.x;
+    int newYOfSelectedResizeArea = originalYOfSelectedResizeArea + resizeVector.y;
+
+    if (newXOfSelectedResizeArea < topLeftX)
+    {
+      cwh.setX(newXOfSelectedResizeArea);
+    }
+    else
+    {
+      cwh.setX(topLeftX);
+    }
+
+    if (newYOfSelectedResizeArea < topLeftY)
+    {
+      cwh.setY(newYOfSelectedResizeArea);
+    }
+    else
+    {
+      cwh.setY(topLeftY);
+    }
+
+    cwh.setWidth(Math.abs(newXOfSelectedResizeArea - topLeftX));
+    cwh.setHeight(Math.abs(newYOfSelectedResizeArea - topLeftY));
+    return cwh;
+  }
+
+
+  private CoordinatesWithAndHeight calculateCoordinatedWidthAndHeightResizingLowerLeft()
+  {
+    CoordinatesWithAndHeight cwh = new CoordinatesWithAndHeight();
+    int originalXOfSelectedResizeArea = topLeftX;
+    int originalYOfSelectedResizeArea = topLeftY + height;
+    int newXOfSelectedResizeArea = originalXOfSelectedResizeArea + resizeVector.x;
+    int newYOfSelectedResizeArea = originalYOfSelectedResizeArea + resizeVector.y;
+
+    if (newXOfSelectedResizeArea > topLeftX + width)
+    {
+      cwh.setX(topLeftX + width);
+    }
+    else
+    {
+      cwh.setX(newXOfSelectedResizeArea);
+    }
+
+    if (newYOfSelectedResizeArea < topLeftY)
+    {
+      cwh.setY(newYOfSelectedResizeArea);
+    }
+    else
+    {
+      cwh.setY(topLeftY);
+    }
+
+    cwh.setWidth(Math.abs(newXOfSelectedResizeArea - (topLeftX + width)));
+    cwh.setHeight(Math.abs(newYOfSelectedResizeArea - topLeftY));
+
+    return cwh;
+  }
+
+  private CoordinatesWithAndHeight calculateCoordinatedWidthAndHeightResizingUpperLeft()
+  {
+    CoordinatesWithAndHeight cwh = new CoordinatesWithAndHeight();
+    int originalXOfSelectedResizeArea = topLeftX;
+    int originalYOfSelectedResizeArea = topLeftY;
+    int newXOfSelectedResizeArea = originalXOfSelectedResizeArea + resizeVector.x;
+    int newYOfSelectedResizeArea = originalYOfSelectedResizeArea + resizeVector.y;
+
+    if (newXOfSelectedResizeArea > topLeftX + width)
+    {
+      cwh.setX(topLeftX + width);
+    }
+    else
+    {
+      cwh.setX(newXOfSelectedResizeArea);
+    }
+
+    if (newYOfSelectedResizeArea > topLeftY + height)
+    {
+      cwh.setY(topLeftY + height);
+    }
+    else
+    {
+      cwh.setY(newYOfSelectedResizeArea);
+    }
+
+    cwh.setWidth(Math.abs(newXOfSelectedResizeArea - (topLeftX + width)));
+    cwh.setHeight(Math.abs(newYOfSelectedResizeArea - (topLeftY + height)));
+
+    return cwh;
+  }
+
+  private CoordinatesWithAndHeight calculateCoordinatedWidthAndHeightResizingUpperRight()
+  {
+    CoordinatesWithAndHeight cwh = new CoordinatesWithAndHeight();
+    int originalXOfSelectedResizeArea = topLeftX + width;
+    int originalYOfSelectedResizeArea = topLeftY;
+    int newXOfSelectedResizeArea = originalXOfSelectedResizeArea + resizeVector.x;
+    int newYOfSelectedResizeArea = originalYOfSelectedResizeArea + resizeVector.y;
+
+    if (newXOfSelectedResizeArea < topLeftX)
+    {
+      cwh.setX(newXOfSelectedResizeArea);
+    }
+    else
+    {
+      cwh.setX(topLeftX);
+    }
+
+    if (newYOfSelectedResizeArea > topLeftY + height)
+    {
+      cwh.setY(topLeftY + height);
+    }
+    else
+    {
+      cwh.setY(newYOfSelectedResizeArea);
+    }
+
+    cwh.setWidth(Math.abs(newXOfSelectedResizeArea - topLeftX));
+    cwh.setHeight(Math.abs(newYOfSelectedResizeArea - (topLeftY + height)));
+
+    return cwh;
+  }
+
+  //HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
+  //
+  // INNER CLASS
+  //
+  //PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+
+  /**
+   * Simple struct-like class containing a coordinate pair, a width and a height.
+   */
+  private class CoordinatesWithAndHeight
+  {
+    private int x;
+    private int y;
+    private int width;
+    private int height;
+
+    public int getX()
+    {
+      return x;
+    }
+
+    public void setX(int x)
+    {
+      this.x = x;
+    }
+
+    public int getY()
+    {
+      return y;
+    }
+
+    public void setY(int y)
+    {
+      this.y = y;
+    }
+
+    public int getWidth()
+    {
+      return width;
+    }
+
+    public void setWidth(int width)
+    {
+      this.width = width;
+    }
+
+    public int getHeight()
+    {
+      return height;
+    }
+
+    public void setHeight(int height)
+    {
+      this.height = height;
+    }
   }
 
 }

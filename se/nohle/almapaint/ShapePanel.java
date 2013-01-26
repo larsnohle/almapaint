@@ -40,7 +40,7 @@ class ShapePanel extends JPanel
   private CoordinatePair dragStartPoint;
   private boolean dragStarted;  
   private FreehandShape freehandShapeUnderConstruction;
-  private boolean moveOperationOngoing;
+  private boolean dragOperationOfExistingShapeOngoing;
   private Callback callback;
 
   /**
@@ -408,29 +408,25 @@ class ShapePanel extends JPanel
    *
    *@param point The current mouse pointer position.
    */
-  private void moveTopShapeIfAny(CoordinatePair point)
+  private void handleDragOfExistingShape(CoordinatePair point)
   {
-    if (!moveOperationOngoing)
+    if (!dragOperationOfExistingShapeOngoing)
     {
-      DrawableShape shapeToMove = findTopmostShapeThatIncludesPoint(point);    
-
-      if (shapeToMove != null)
+      if (shapeManager.handleDragOfExistingShape(point))
       {
-        shapeManager.moveOperationStarted(shapeToMove);
-        moveOperationOngoing = true;
-        callback.shapeSelectionChanged(); //  moveOperationStarted() selectes the shape that is moved.
+        dragOperationOfExistingShapeOngoing = true;
+        callback.shapeSelectionChanged();
       }
     }
     
 
-    if (moveOperationOngoing)
+    if (dragOperationOfExistingShapeOngoing)
     {
       // Calculate translation vector.
       CoordinatePair translationVector = point.difference(dragStartPoint);
-      shapeManager.moveOperationShapeHasMoved(translationVector);
+      shapeManager.dragOperationShapeHasBeenDragged(translationVector);
       repaint();
     }
-
   }
 
   /**
@@ -441,8 +437,9 @@ class ShapePanel extends JPanel
    */
   private void selectShape(CoordinatePair point, boolean unselectOtherSelectedShapes)
   {
-    DrawableShape shape = findTopmostShapeThatIncludesPoint(point);
-    if (shape != null)
+    ShapeAndDragTypeTuple shapeAndDragTypeTuple = shapeManager.findTopmostShapeThatIncludesPoint(point, false);
+    DrawableShape shape;
+    if (shapeAndDragTypeTuple != null && (shape = shapeAndDragTypeTuple.getShape()) != null)
     {
       shapeManager.selectShape(shape, unselectOtherSelectedShapes);
       repaint();
@@ -462,26 +459,6 @@ class ShapePanel extends JPanel
       repaint();
       callback.shapeSelectionChanged();
     }
-  }
-
-  /**
-   * Returns the topmost shape in which the specified point is included.
-   *
-   * @param point The point to check.
-   * @return The topmost shape that includes point, or null if point is not 
-   *        included in any shape.
-   */
-  private DrawableShape findTopmostShapeThatIncludesPoint(CoordinatePair point)
-  {
-    for (DrawableShape shape : shapeManager.getShapesInReverseOrder())
-    {
-      if (shape.isPointIncluded(point))
-      {
-        return shape;
-      }
-    }
-
-    return null;
   }
 
 
@@ -536,9 +513,9 @@ class ShapePanel extends JPanel
     {
       if (dragStarted)
       {
-        if (moveOperationOngoing) // A move has ended.
+        if (dragOperationOfExistingShapeOngoing) // A move has ended.
         {
-          shapeManager.moveOperationCompleted();
+          shapeManager.dragOfExistingShapeCompleted();
         }
         else
         {
@@ -576,7 +553,7 @@ class ShapePanel extends JPanel
       dragStarted = false;
       dragStartPoint = null;
       freehandShapeUnderConstruction = null;
-      moveOperationOngoing = false;
+      dragOperationOfExistingShapeOngoing = false;
     }
 
 
@@ -602,7 +579,7 @@ class ShapePanel extends JPanel
       }
       else if (isMoveToolSelected())
       {
-        moveTopShapeIfAny(new CoordinatePair(e.getX() - 1, e.getY() - 1));
+        handleDragOfExistingShape(new CoordinatePair(e.getX() - 1, e.getY() - 1));
       }      
     }
   }

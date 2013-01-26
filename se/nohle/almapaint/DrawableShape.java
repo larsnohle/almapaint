@@ -43,6 +43,32 @@ public interface DrawableShape extends Serializable, Cloneable
   public boolean isPointIncluded(CoordinatePair point);
 
   /**
+   * Should return true if the specified point is located in a resize area of the shape.
+   *
+   * @param point The point to check.
+   * @return true if point is located in a resize area.
+   */
+  public boolean isPointInResizeArea(CoordinatePair point);
+
+  /**
+   * Sets the resize area that the user has selected.
+   */
+  public void setSelectedResizeArea(CoordinatePair point);
+
+  /**
+   * Should set the resize vector to use when drawing this shape.
+   *
+   * @param resizeVector The translation vector.
+   */
+  public void setResizeVector(CoordinatePair resizeVector);
+
+  /**
+   * Translates the coordinates used to draw this shape by the amount specified
+   * by the resize vector, which then is nulled out.
+   */
+  public void incorporateResizeVector();
+
+  /**
    * Should set the translation vector to use when drawing this shape.
    *
    * @param translationVector The translation vector.

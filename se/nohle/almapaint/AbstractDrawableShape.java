@@ -28,8 +28,9 @@ abstract class AbstractDrawableShape implements DrawableShape
 {
   protected transient Stroke stroke;
   protected int strokeWidth;
-  protected Color color; 
-  protected CoordinatePair translationVector;
+  protected Color color;
+  protected transient CoordinatePair resizeVector;
+  protected transient CoordinatePair translationVector;
   private final static long serialVersionUID = 123457890L;
 
   /** Is this shape selected? */
@@ -46,6 +47,26 @@ abstract class AbstractDrawableShape implements DrawableShape
     this.stroke = new BasicStroke(strokeWidth);
     this.color = color;
     this.selected = selected;
+  }
+
+  /**
+   * Copies the translation vector and resize vector from the specified shape.
+   * Can be used by copy constructors of derived classes.'
+   *
+   * @param that The shape whose translation and resize vecors should be copied into this object.
+   */
+  protected void copyTranslationAndResizeVectors(AbstractDrawableShape that)
+  {
+    if (that.translationVector != null)
+    {
+      this.translationVector = new CoordinatePair(that.translationVector.x,
+        that.translationVector.y);
+    }
+
+    if (that.resizeVector != null)
+    {
+      this.resizeVector = new CoordinatePair(that.resizeVector.x, that.resizeVector.y);
+    }
   }
 
   @Override
@@ -67,7 +88,48 @@ abstract class AbstractDrawableShape implements DrawableShape
   {
     return false;
   }
-  
+
+  /**
+   * Should return true if the specified point is located in a resize area of the shape.
+   *
+   * @param point The point to check.
+   * @return false
+   */
+  @Override
+  public boolean isPointInResizeArea(CoordinatePair point)
+  {
+    return false;
+  }
+
+  /**
+   * Sets the resize area that the user has selected.
+   */
+  public void setSelectedResizeArea(CoordinatePair point)
+  {
+
+  }
+
+  /**
+   * Should set the resize vector to use when drawing this shape.
+   *
+   * @param resizeVector The translation vector.
+   */
+  @Override
+  public void setResizeVector(CoordinatePair resizeVector)
+  {
+    this.resizeVector = resizeVector;
+  }
+
+  /**
+   * Translates the coordinates used to draw this shape by the amount specified
+   * by the resize vector, which then is nulled out.
+   */
+  @Override
+  public void incorporateResizeVector()
+  {
+    this.resizeVector = null;
+  }
+
   /**
    * Sets the translation vector to use when drawing this shape.
    *

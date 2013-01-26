@@ -38,8 +38,10 @@ class ShapeManager
   private Stack<UndoQueueCommand> redoStack = new Stack<>();
 
 
+  private DragType ongoingDragOperation;
   private ShapeTupleList movedShapes = new ShapeTupleList();
-
+  private DrawableShape shapeToDisplayWhenResizing;
+  private DrawableShape originalShapeBeforeResizing;
   private Set<DrawableShape> selectedShapes = new LinkedHashSet<>();
 
   //PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
@@ -90,12 +92,67 @@ class ShapeManager
     }
   }
 
+  boolean handleDragOfExistingShape(CoordinatePair point)
+  {
+    ShapeAndDragTypeTuple shapeAndDragTypeTuple = findTopmostShapeThatIncludesPoint(point, true);
+
+    if (shapeAndDragTypeTuple != null)
+    {
+      DrawableShape shape =  shapeAndDragTypeTuple.getShape();
+      if (shapeAndDragTypeTuple.getDragType() == DragType.MOVE)
+      {
+        ongoingDragOperation = DragType.MOVE;
+        moveOperationStarted(shape);
+      }
+      else if (shapeAndDragTypeTuple.getDragType() == DragType.RESIZE)
+      {
+        ongoingDragOperation = DragType.RESIZE;
+        resizeOperationStarted(shape, point);
+      }
+      else
+      {
+       ongoingDragOperation = null;
+      }
+
+      return true;
+    }
+
+    return  false;
+  }
+
+  void dragOperationShapeHasBeenDragged(CoordinatePair translationVector)
+  {
+    if (ongoingDragOperation == DragType.MOVE)
+    {
+      for (ShapeTuple shapeTuple : movedShapes)
+      {
+        shapeTuple.getSecondShape().setTranslationVector(translationVector);
+      }
+    }
+    else if (ongoingDragOperation == DragType.RESIZE)
+    {
+      shapeToDisplayWhenResizing.setResizeVector(translationVector);
+    }
+  }
+
+  void dragOfExistingShapeCompleted()
+  {
+     if (ongoingDragOperation == DragType.MOVE)
+     {
+       moveOperationCompleted();
+     }
+    else if (ongoingDragOperation == DragType.RESIZE)
+     {
+       resizeOperationCompleted();
+     }
+  }
+
   /**
    * Starts a move operation.
    *
    * @param movedShape The shape to move.
    */
-  void moveOperationStarted(DrawableShape movedShape)
+  private void moveOperationStarted(DrawableShape movedShape)
   {
     //----------------------------------------------------------
     // GUARD
@@ -130,22 +187,14 @@ class ShapeManager
     }
   }
 
-  void moveOperationShapeHasMoved(CoordinatePair translationVector)
-  {
-    for (ShapeTuple shapeTuple : movedShapes)
-    {
-      shapeTuple.getSecondShape().setTranslationVector(translationVector);
-    }
-  }
-
-  void moveOperationCompleted()
+  private void moveOperationCompleted()
   {
     if (movedShapes.size() == 0)
     {
       throw new IllegalStateException("No move operation is ongoing!");
     }
-    
-    // Tell the shape to calculate its new coordinates based on the 
+
+    // Tell the shape to calculate its new coordinates based on the
     // delta it has moved.
     for (ShapeTuple shapeTuple : movedShapes)
     {
@@ -153,7 +202,82 @@ class ShapeManager
     }
 
     undoStack.push(new UndoQueueCommand(OperationType.REPLACE, movedShapes.swapItemsInTuples()));
-    resetMoveCache();    
+    resetMoveCache();
+  }
+
+  private void resizeOperationStarted(DrawableShape shapeToResize, CoordinatePair point)
+  {
+    //----------------------------------------------------------
+    // GUARD
+    //----------------------------------------------------------
+    if (!shapes.contains(shapeToResize))
+    {
+      resetResizeCache();
+      throw new IllegalArgumentException("The shape is not managed!");
+    }
+
+    // Clone the shape so we have an object we can translate.
+    DrawableShape shapeToDisplayUnderResize = shapeToResize.createClone();
+
+    // Tell the shape to determine which resize area that is used.
+    shapeToDisplayUnderResize.setSelectedResizeArea(point);
+
+    // Remove original shape from the managed set and the set of selected shapes.
+    removeShapeDoNotAddToAnyStack(shapeToResize);
+    unselectSelectedShape(shapeToResize);
+
+    // Add the clone to the managed set, select it and remember that just it is the shape that is resized.
+    addShapeDoNotAddToAnyStack(shapeToDisplayUnderResize);
+    selectShape(shapeToDisplayUnderResize, false);
+    shapeToDisplayWhenResizing = shapeToDisplayUnderResize;
+    originalShapeBeforeResizing = shapeToResize;
+  }
+
+  private void resizeOperationCompleted()
+  {
+    if (shapeToDisplayWhenResizing == null)
+    {
+      throw new IllegalStateException("No resize operation is ongoing!");
+    }
+
+    // Tell the shape to calculate its new coordinates based on the
+    // delta it has moved.
+    shapeToDisplayWhenResizing.incorporateResizeVector();
+
+    // Create UndoCommand so that we can undo the resize.
+    ShapeTupleList stl = new ShapeTupleList();
+    stl.add(new ShapeTuple(shapeToDisplayWhenResizing, originalShapeBeforeResizing));
+    undoStack.push(new UndoQueueCommand(OperationType.REPLACE, stl));
+    resetResizeCache();
+  }
+
+  /**
+   * Returns the topmost shape in which the specified point is included in either a resize area or in the
+   * actual shape.
+   *
+   * @param point The point to check.
+   * @param shouldIncludeResizeAreas true if resize areas should be included in the search.
+   * @return Tuple containing the topmost shape that includes point in either resize area or actual shape,
+   *         or null if point is not included in any shape. The dragType of the returned tuple indicates if the
+   *         point was included in a resize area or in the actual shape.
+   */
+  ShapeAndDragTypeTuple findTopmostShapeThatIncludesPoint(CoordinatePair point,
+                                                                  boolean shouldIncludeResizeAreas)
+  {
+    for (DrawableShape shape : getShapesInReverseOrder())
+    {
+      if (shouldIncludeResizeAreas && shape.isPointInResizeArea(point))
+      {
+        return new ShapeAndDragTypeTuple(shape, DragType.RESIZE);
+      }
+
+      if (shape.isPointIncluded(point))
+      {
+        return new ShapeAndDragTypeTuple(shape, DragType.MOVE);
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -419,7 +543,18 @@ class ShapeManager
   private void resetMoveCache()
   {
     movedShapes.clear();
+    ongoingDragOperation = null;
   }
+
+  /**
+   * Reset the cache containing the shape displayed during a resize operation..
+   */
+  private void resetResizeCache()
+  {
+    shapeToDisplayWhenResizing = null;
+    originalShapeBeforeResizing = null;
+  }
+
 
   /**
    * Prints the managed shapes to std out.
@@ -520,10 +655,14 @@ class ShapeManager
   // INNER CLASS
   //
   //HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
+
+  /**
+   * List of Shape tuples.
+   */
   private static class ShapeTupleList implements Iterable<ShapeTuple>
   {
-    private static List<DrawableShape> firstShapeList = new ArrayList<>();
-    private static List<DrawableShape> secondShapeList = new ArrayList<>();
+    private List<DrawableShape> firstShapeList = new ArrayList<>();
+    private List<DrawableShape> secondShapeList = new ArrayList<>();
 
     private ShapeTupleList()
     {
@@ -563,12 +702,19 @@ class ShapeManager
       secondShapeList.clear();
     }
 
+    /**
+     * Swaps the lists containing the first items of the tuples and the list containing the second item of the tuples.
+     * From the client perspective, this in effect swaps the items in the tuples.
+     *
+     * Performs the operations in place and return this object.
+     *
+     * @return this
+     */
     private ShapeTupleList swapItemsInTuples()
     {
       List<DrawableShape> tmpList = firstShapeList;
       firstShapeList = secondShapeList;
       secondShapeList = tmpList;
-
       return this;
     }
 

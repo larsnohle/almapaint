@@ -115,4 +115,19 @@ class Utilities
     double deltaY  = pY -p2.y;
     return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
   }
+
+  /**
+   * Determines if the specified point is inside the specified rectangle.
+   */
+  static boolean pointInRectangle(CoordinatePair point,
+                                          int topLeftX, int topLeftY,
+                                          int width, int height)
+  {
+    if (point.x < topLeftX || point.x > topLeftX + width ||
+      point.y < topLeftY || point.y > topLeftY + height) {
+      return false;
+    }
+
+    return true;
+  }
 }
