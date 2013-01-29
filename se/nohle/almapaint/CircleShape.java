@@ -19,18 +19,26 @@
 package se.nohle.almapaint;
 
 import java.awt.*;
+import static se.nohle.almapaint.Utilities.pointInRectangle;
 
 /**
  * A shape in form of a line,
  */
 class CircleShape extends AbstractDrawableShape
 {
+  private enum CircleResizeArea
+  {
+    TOP, RIGHT, BOTTOM, LEFT
+  }
+
   private final Color color; 
   private int topLeftX; 
   private int topLeftY; 
   private CoordinatePair centerPoint;
-  private final int radius; 
+  private int radius;
   private final boolean fill;
+
+  private CircleResizeArea selectedResizeArea;
 
   /**
    * Constructor
@@ -52,8 +60,7 @@ class CircleShape extends AbstractDrawableShape
     this.centerPoint = centerPoint;
     this.radius = radius;
 
-    topLeftX = centerPoint.x - radius;
-    topLeftY = centerPoint.y - radius;
+    initializeTopLeftCoordinatesFromRadius(radius);
   }
 
   /**
@@ -82,8 +89,9 @@ class CircleShape extends AbstractDrawableShape
   CircleShape(CircleShape that)
   {
     this(that.color, that.centerPoint, that.radius, that.fill, that.strokeWidth, that.selected);
-  }
 
+    copyTranslationAndResizeVectors(that);
+  }
 
   @Override
   public void draw(Graphics g)
@@ -98,15 +106,22 @@ class CircleShape extends AbstractDrawableShape
     //---------------------------------------------------------- 
     int topLeftXToUse = topLeftX;
     int topLeftYToUse = topLeftY;
+    int radiusToUse = radius;
 
     if (translationVector != null)
     {
       topLeftXToUse += translationVector.x;
       topLeftYToUse += translationVector.y;
     }
+    else if (resizeVector != null)
+    {
+      radiusToUse = calculateRadiusFromResizeVector();
+      topLeftXToUse = centerPoint.x - radiusToUse;
+      topLeftYToUse = centerPoint.y - radiusToUse;
+    }
 
     // The width and height are double the length of the radius.
-    int side = 2 * radius;
+    int side = 2 * radiusToUse;
 
     if (fill)
     {
@@ -159,6 +174,27 @@ class CircleShape extends AbstractDrawableShape
   }
 
   /**
+   * Should return true if the specified point is located in a resize area of the shape.
+   *
+   * @param point The point to check.
+   * @return true if point is located in a resize area.
+   */
+  @Override
+  public boolean isPointInResizeArea(CoordinatePair point)
+  {
+    return getResizeAreaForPoint(point) != null;
+  }
+
+  /**
+   * Sets the resize area that the user has selected.
+   */
+  @Override
+  public void setSelectedResizeArea(CoordinatePair point)
+  {
+    selectedResizeArea = getResizeAreaForPoint(point);
+  }
+
+  /**
    * Translates the coordinates used to draw this shape by the amount specified
    * by the translation vector, which then is nulled out.
    */
@@ -176,6 +212,22 @@ class CircleShape extends AbstractDrawableShape
     super.incorporateTranslationVector();
   }
 
+  /**
+   * Translates the coordinates used to draw this shape by the amount specified
+   * by the resize vector, which then is nulled out.
+   */
+  @Override
+  public void incorporateResizeVector()
+  {
+    if (resizeVector != null)
+    {
+      radius = calculateRadiusFromResizeVector();
+      topLeftX = centerPoint.x - radius;
+      topLeftY = centerPoint.y - radius;
+    }
+
+    super.incorporateResizeVector();
+  }
 
   /**
    * Creates a clone of this shape.
@@ -193,7 +245,26 @@ class CircleShape extends AbstractDrawableShape
   // PRIVATE METHODS.
   // 
   //PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
-  
+
+  /**
+   * Initializes topLeftX and topLeftY from a radius.
+   *
+   * @param radius The radius to use for the initialization.
+   */
+  private void initializeTopLeftCoordinatesFromRadius(int radius)
+  {
+    topLeftX = centerPoint.x - radius;
+    topLeftY = centerPoint.y - radius;
+  }
+
+  /**
+   * Checks if a point is included in a circle.
+   *
+   * @param point The point to check.
+   * @param centerPoint The center point of the circle to check.
+   * @param radius The radius of the circle to check.
+   * @return true if point is located inside the circle, false if not.
+   */
   private static boolean isPointInCircle(CoordinatePair point, 
                                          CoordinatePair centerPoint, int radius)
   {
@@ -201,5 +272,79 @@ class CircleShape extends AbstractDrawableShape
     int x = point.x - centerPoint.x;
     int y = point.y - centerPoint.y;
     return Math.sqrt(x * x + y * y) <= radius;
+  }
+
+  /**
+   * Returns the resize area which includes the specified point, or null if no resize area contains the point.
+   *
+   * @param point The point to check.
+   * @return The resize area in which the point is located or null if no such resize area exist.
+   */
+  private CircleResizeArea getResizeAreaForPoint(CoordinatePair point)
+  {
+    if (!isSelected())
+    {
+      return null;
+    }
+
+    // The width and height are double the length of the radius.
+    int side = 2 * radius;
+    int rectWidthAndHight = getWidthOfMarkerSquare();
+    int leftXOfMiddleSquares = topLeftX - rectWidthAndHight / 2 + side / 2;
+    int topYOfUpperSquare =  topLeftY - rectWidthAndHight / 2;
+    int leftXOfRightSquare = topLeftX - rectWidthAndHight / 2 + side;
+    int topYOfMiddleSquares = topLeftY - rectWidthAndHight / 2 + side / 2;
+    int topYOfBottomSquare = topLeftY - rectWidthAndHight / 2 + side;
+    int leftXOfLeftSquare = topLeftX - rectWidthAndHight / 2;
+
+    if (pointInRectangle(point,leftXOfMiddleSquares,topYOfUpperSquare, rectWidthAndHight, rectWidthAndHight))
+    {
+      return CircleResizeArea.TOP;
+    }
+    else if (pointInRectangle(point, leftXOfRightSquare, topYOfMiddleSquares, rectWidthAndHight, rectWidthAndHight))
+    {
+      return CircleResizeArea.RIGHT;
+    }
+    else if (pointInRectangle(point, leftXOfLeftSquare, topYOfMiddleSquares, rectWidthAndHight, rectWidthAndHight))
+    {
+      return CircleResizeArea.LEFT;
+    }
+    else if (pointInRectangle(point, leftXOfMiddleSquares, topYOfBottomSquare, rectWidthAndHight, rectWidthAndHight))
+    {
+      return CircleResizeArea.BOTTOM;
+    }
+
+    return null;
+  }
+
+  /**
+   * Calculates a new radius to use when drawing this circle shape when its resizing.
+   *
+   * @return the new radius to use when this circle is resizing.
+   */
+  private int calculateRadiusFromResizeVector()
+  {
+    int radiusToUse = radius;
+
+    if (selectedResizeArea == CircleResizeArea.LEFT)
+    {
+      radiusToUse -= resizeVector.x;
+    }
+    else if (selectedResizeArea == CircleResizeArea.RIGHT)
+    {
+      radiusToUse += resizeVector.x;
+    }
+    else if (selectedResizeArea == CircleResizeArea.TOP)
+    {
+      radiusToUse -= resizeVector.y;
+    }
+    else if (selectedResizeArea == CircleResizeArea.BOTTOM)
+    {
+      radiusToUse += resizeVector.y;
+    }
+
+    // As the mouse pointer might have moved passed the center point (and the calculated radius hence is negative)
+    // we return the absolute value of the calculated radius.
+    return Math.abs(radiusToUse);
   }
 }
